@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\SpendScope.Domain\SpendScope.Domain.csproj" />
+    <ProjectReference Include="..\..\SpendScope.Application\SpendScope.Application.csproj" />
+    <ProjectReference Include="..\..\SpendScope.Contracts\SpendScope.Contracts.csproj" />
+    <ProjectReference Include="..\..\SpendScope.Features\SpendScope.Features.csproj" />
+    <ProjectReference Include="..\..\SpendScope.Infrastructure\SpendScope.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\SpendScope.Api\SpendScope.Api.csproj" />
+    <ProjectReference Include="..\..\SpendScope.Web\SpendScope.Web.csproj" />
+  </ItemGroup>
+
+</Project>

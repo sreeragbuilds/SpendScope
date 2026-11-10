@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- Slice endpoints use Minimal API types (IEndpointRouteBuilder, Results). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SpendScope.Application\SpendScope.Application.csproj" />
+    <ProjectReference Include="..\SpendScope.Domain\SpendScope.Domain.csproj" />
+    <ProjectReference Include="..\SpendScope.Contracts\SpendScope.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

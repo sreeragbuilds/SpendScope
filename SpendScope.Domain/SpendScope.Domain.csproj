@@ -1,0 +1,5 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ARCH-01: no project or package references. Only the base class library. -->
+
+</Project>

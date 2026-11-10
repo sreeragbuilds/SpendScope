@@ -1,0 +1,7 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SpendScope.Domain\SpendScope.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>7691232d-0ee8-4a13-8520-3afafd16d8d1</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Serves the SpendScope.Web WASM bundle from this host (hosted model, spec section 19.1). -->
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Enrichers.Environment" />
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SpendScope.Features\SpendScope.Features.csproj" />
+    <ProjectReference Include="..\SpendScope.Infrastructure\SpendScope.Infrastructure.csproj" />
+    <ProjectReference Include="..\SpendScope.Application\SpendScope.Application.csproj" />
+    <ProjectReference Include="..\SpendScope.Contracts\SpendScope.Contracts.csproj" />
+    <ProjectReference Include="..\SpendScope.Web\SpendScope.Web.csproj" />
+  </ItemGroup>
+
+</Project>

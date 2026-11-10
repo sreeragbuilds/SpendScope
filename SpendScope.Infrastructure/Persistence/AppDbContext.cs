@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +12,15 @@ using SpendScope.Infrastructure.Identity;
 namespace SpendScope.Infrastructure.Persistence;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser currentUser)
-    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IAppDbContext
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IAppDbContext, IDataProtectionKeyContext
 {
     public DbSet<Expense> Expenses => Set<Expense>();
+
+    /// <summary>
+    /// ASP.NET Core Data Protection keys (used for password reset tokens). Stored in the database so
+    /// they survive container restarts and are shared by every instance.
+    /// </summary>
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     public DbSet<Category> Categories => Set<Category>();
 

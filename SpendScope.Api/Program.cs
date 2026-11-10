@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using SpendScope.Api.Auth;
 using SpendScope.Api.Endpoints;
@@ -39,7 +40,28 @@ try
         .ValidateDataAnnotations()
         .ValidateOnStart();
 
+    // Behind a TLS-terminating proxy (Render, Fly, a load balancer) the real scheme and client IP
+    // arrive in X-Forwarded-* headers. Without this, every client shares the proxy's IP for rate
+    // limiting and the app believes requests are plain HTTP. Only the last hop (the proxy itself)
+    // is trusted, so a client cannot spoof its IP by sending its own X-Forwarded-For.
+    var behindProxy = builder.Configuration.GetValue<bool>("ForwardedHeaders:Enabled");
+    if (behindProxy)
+    {
+        builder.Services.Configure<ForwardedHeadersOptions>(o =>
+        {
+            o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            o.ForwardLimit = 1;
+            o.KnownIPNetworks.Clear(); // the platform's proxy addresses are not known in advance
+            o.KnownProxies.Clear();
+        });
+    }
+
     var app = builder.Build();
+
+    if (behindProxy)
+    {
+        app.UseForwardedHeaders();
+    }
 
     app.UseExceptionHandler();
     app.UseSpendScopeRequestLogging();

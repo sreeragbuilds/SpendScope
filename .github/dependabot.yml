@@ -9,11 +9,15 @@ updates:
       microsoft-aspnetcore:
         patterns: ["Microsoft.AspNetCore.*", "Microsoft.EntityFrameworkCore*", "Microsoft.Extensions.*"]
 
-  # Base images in the Dockerfile.
+  # Base images in the Dockerfile. Major .NET versions are ignored: the project targets .NET 10 LTS
+  # and global.json pins the SDK, so a .NET 11 image would not build. Upgrade deliberately instead.
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: "dotnet/*"
+        update-types: ["version-update:semver-major"]
 
   # Actions used in .github/workflows.
   - package-ecosystem: github-actions

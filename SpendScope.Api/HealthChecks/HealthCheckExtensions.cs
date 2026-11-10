@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using SpendScope.Infrastructure.Persistence;
 
 namespace SpendScope.Api.HealthChecks;
 
@@ -13,13 +14,9 @@ internal static class HealthCheckExtensions
 
     public static IServiceCollection AddSpendScopeHealthChecks(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Default");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException(
-                "Connection string 'ConnectionStrings:Default' is not configured. " +
-                "In development set it with dotnet user-secrets (see README); elsewhere use ConnectionStrings__Default.");
-        }
+        // Same resolution as AddInfrastructure, which has already failed fast if it is missing.
+        var connectionString = DatabaseConnection.Resolve(configuration)
+            ?? throw new InvalidOperationException("Connection string 'ConnectionStrings:Default' is not configured.");
 
         services.AddHealthChecks()
             .AddNpgSql(

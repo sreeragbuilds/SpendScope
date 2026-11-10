@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+.git/
+.claude/
+tests/
+docs/
+docker-compose.yml
+Dockerfile
+.dockerignore
+**/appsettings.Development.json
+**/Properties/launchSettings.json

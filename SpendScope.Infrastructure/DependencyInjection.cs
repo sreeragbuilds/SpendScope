@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -16,12 +17,12 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
-        var connectionString = configuration.GetConnectionString("Default");
+        var connectionString = DatabaseConnection.Resolve(configuration);
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException(
                 "Connection string 'ConnectionStrings:Default' is not configured. " +
-                "In development set it with dotnet user-secrets (see README); elsewhere use ConnectionStrings__Default.");
+                "In development set it with dotnet user-secrets (see README); elsewhere use ConnectionStrings__Default or DATABASE_URL.");
         }
 
         services.AddDbContext<AppDbContext>(options => options
@@ -56,6 +57,12 @@ public static class DependencyInjection
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
+
+        // Keys in PostgreSQL, not the container filesystem: restarts (e.g. Render free-tier spin-down)
+        // would otherwise invalidate every outstanding reset link.
+        services.AddDataProtection()
+            .SetApplicationName("SpendScope")
+            .PersistKeysToDbContext<AppDbContext>();
 
         // Reset links are single use (the security stamp changes) and expire after an hour.
         services.Configure<DataProtectionTokenProviderOptions>(o => o.TokenLifespan = TimeSpan.FromHours(1));

@@ -96,6 +96,36 @@ Add a migration after a model change:
 dotnet ef migrations add <Name> --project SpendScope.Infrastructure --startup-project SpendScope.Infrastructure --output-dir Persistence/Migrations
 ```
 
+## Docker
+
+```bash
+docker build -t spendscope .
+docker run -p 8080:8080 -e DATABASE_URL=postgresql://user:pass@host:5432/db -e Jwt__SigningKey=<32+ random chars> -e Database__MigrateOnStartup=true spendscope
+```
+
+The image runs as a non-root user, listens on `$PORT` (default 8080), and the build fails if the
+Blazor `index.html` would reference missing files.
+
+## Deploying to Render
+
+Render builds the `master` branch with the `Dockerfile`. Changes reach `master` through pull
+requests, and every merge redeploys. Details and trade-offs: [ADR 0004](docs/adr/0004-render-deployment.md).
+
+| Resource | Setting |
+|---|---|
+| PostgreSQL | Render Postgres, same region as the web service |
+| Web service | Runtime Docker, branch `master`, auto-deploy on |
+
+Web service environment variables:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | the database's **internal** connection URL |
+| `Jwt__SigningKey` | 32+ random characters (generate it; never commit it) |
+| `App__PublicBaseUrl` | the service URL, e.g. `https://spendscope.onrender.com` |
+| `ForwardedHeaders__Enabled` | `true` |
+| `Database__MigrateOnStartup` | `true` (free plan has no pre-deploy step) |
+
 ## Tests
 
 `dotnet test` runs all four suites. It needs Docker running: the integration tests start

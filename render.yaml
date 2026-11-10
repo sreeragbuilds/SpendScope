@@ -34,5 +34,6 @@ services:
       # The free plan has no pre-deploy step, so migrations run at startup (single instance).
       - key: Database__MigrateOnStartup
         value: "true"
+      # Used in password reset links. Render assigned this URL (the name "spendscope" was taken).
       - key: App__PublicBaseUrl
-        value: https://spendscope.onrender.com
+        value: https://spendscope-v9u5.onrender.com

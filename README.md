@@ -126,7 +126,7 @@ Web service environment variables:
 |---|---|
 | `DATABASE_URL` | the database's **internal** connection URL |
 | `Jwt__SigningKey` | 32+ random characters (generate it; never commit it) |
-| `App__PublicBaseUrl` | the service URL, e.g. `https://spendscope.onrender.com` |
+| `App__PublicBaseUrl` | the service URL (live: `https://spendscope-v9u5.onrender.com`) |
 | `ForwardedHeaders__Enabled` | `true` |
 | `Database__MigrateOnStartup` | `true` (free plan has no pre-deploy step) |
 

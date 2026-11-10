@@ -1,7 +1,7 @@
 # Multi-stage build (spec 25.1). The published Api serves the Blazor WebAssembly client.
 
 # ---------- Build ----------
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 
 # Restore first, from project files only, so this layer is cached until a project file changes.

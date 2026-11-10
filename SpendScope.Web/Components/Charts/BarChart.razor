@@ -1,0 +1,37 @@
+@implements IAsyncDisposable
+@inject ChartInterop Charts
+
+<div class="chart-box bar">
+    <canvas id="@CanvasId" role="img" aria-label="@AriaLabel"></canvas>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<string> Labels { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<decimal> Values { get; set; } = [];
+    // Mid teal: readable on both the light and dark surfaces.
+    [Parameter] public string ColorHex { get; set; } = "#14B8A6";
+    [Parameter] public string Currency { get; set; } = "USD";
+    [Parameter] public string CanvasId { get; set; } = $"chart-{Guid.NewGuid():N}";
+    [Parameter] public string AriaLabel { get; set; } = "Monthly totals";
+
+    private IReadOnlyList<decimal>? _rendered;
+    private bool _ready;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        _ready = true;
+        if (!ReferenceEquals(_rendered, Values))
+        {
+            _rendered = Values;
+            await Charts.RenderBarAsync(CanvasId, Labels, Values, ColorHex, Currency);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_ready)
+        {
+            try { await Charts.DestroyAsync(CanvasId); } catch (JSDisconnectedException) { }
+        }
+    }
+}

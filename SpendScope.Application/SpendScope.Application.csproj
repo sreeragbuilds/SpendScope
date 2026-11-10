@@ -1,6 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- Only for IAppDbContext (DbSet<T>, transactions). ARCH-09 confines EF types to Application.Abstractions. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SpendScope.Domain\SpendScope.Domain.csproj" />
   </ItemGroup>
 

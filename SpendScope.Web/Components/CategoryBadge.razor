@@ -1,0 +1,15 @@
+@* Color is never the only indicator: the name is always shown (NFR-12). *@
+<span class="d-inline-flex align-center gap-2">
+    <span class="swatch" style="background:@ColorHex" aria-hidden="true"></span>
+    <span>@Name</span>
+    @if (IsSystem)
+    {
+        <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Style="font-size:14px" Class="mud-text-secondary" aria-label="System category" />
+    }
+</span>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string ColorHex { get; set; } = "#6B7280";
+    [Parameter] public bool IsSystem { get; set; }
+}

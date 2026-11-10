@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "spendscope",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "SpendScope.Api", "--launch-profile", "http", "--no-build"],
+      "port": 5000
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+<div class="d-flex flex-column align-center justify-center text-center pa-8 gap-3" role="status">
+    <MudIcon Icon="@Icon" Style="font-size:56px" Class="mud-text-secondary" aria-hidden="true" />
+    <MudText Typo="Typo.h6">@Title</MudText>
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">@Message</MudText>
+    }
+    @if (ActionText is not null && ActionHref is not null)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@ActionHref" StartIcon="@Icons.Material.Filled.Add">@ActionText</MudButton>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string Icon { get; set; } = Icons.Material.Outlined.Inbox;
+    [Parameter] public string? ActionText { get; set; }
+    [Parameter] public string? ActionHref { get; set; }
+}

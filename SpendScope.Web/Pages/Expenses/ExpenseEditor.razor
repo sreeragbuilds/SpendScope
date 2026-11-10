@@ -1,0 +1,170 @@
+@page "/expenses/new"
+@page "/expenses/{Id:guid}/edit"
+@attribute [Authorize]
+@inject ExpenseApiClient Expenses
+@inject CategoryApiClient Categories
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService Dialogs
+
+<PageTitle>@(IsEdit ? "Edit expense" : "Add expense") · SpendScope</PageTitle>
+
+<div class="page-header">
+    <MudText Typo="Typo.h4" HtmlTag="h1">@(IsEdit ? "Edit expense" : "Add expense")</MudText>
+</div>
+
+@if (_loadError is not null)
+{
+    <EmptyState Title="@_loadError" Icon="@Icons.Material.Outlined.SearchOff" ActionText="Back to expenses" ActionHref="/expenses" />
+}
+else if (_loading)
+{
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="360px" Style="max-width:560px" />
+}
+else
+{
+    <MudPaper Outlined="true" Class="pa-6" Style="max-width:560px">
+        @if (_formError is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" role="alert">@_formError</MudAlert>
+        }
+
+        @* Enter submits (native form); Escape cancels, asking first if there are unsaved changes (spec 19.6). *@
+        <form @onsubmit="SaveAsync" @onsubmit:preventDefault @onkeydown="OnKeyDown" novalidate>
+            <MudStack Spacing="4">
+                <MudNumericField T="decimal" @bind-Value="_amount" Label="Amount" Variant="Variant.Outlined" Min="0" Format="0.00"
+                                 HideSpinButtons="true" Immediate="true" AutoFocus="true"
+                                 Adornment="Adornment.Start" AdornmentText="@(_editing?.Currency ?? "")"
+                                 Error="@HasError("amount")" ErrorText="@ErrorFor("amount")" />
+                <MudDatePicker @bind-Date="_date" Label="Date" Variant="Variant.Outlined" DateFormat="d MMM yyyy"
+                               Error="@HasError("occurredOn")" ErrorText="@ErrorFor("occurredOn")" />
+                <MudSelect T="Guid?" @bind-Value="_categoryId" Label="Category" Variant="Variant.Outlined"
+                           Error="@HasError("categoryId")" ErrorText="@ErrorFor("categoryId")">
+                    @foreach (var c in _categories)
+                    {
+                        <MudSelectItem T="Guid?" Value="@c.Id"><CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" IsSystem="@c.IsSystem" /></MudSelectItem>
+                    }
+                </MudSelect>
+                <MudTextField T="string" @bind-Value="_note" Label="Note (optional)" Variant="Variant.Outlined" Lines="3" AutoGrow="true"
+                              MaxLength="500" Counter="500" Immediate="true" Error="@HasError("note")" ErrorText="@ErrorFor("note")" />
+                <div class="d-flex gap-2">
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_saving || !CanSave)">
+                        @if (_saving)
+                        {
+                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
+                        }
+                        Save
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" OnClick="CancelAsync">Cancel</MudButton>
+                </div>
+            </MudStack>
+        </form>
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool IsEdit => Id is not null;
+
+    private List<CategoryDto> _categories = [];
+    private ExpenseDto? _editing;
+    private decimal _amount;
+    private DateTime? _date = DateTime.Today;
+    private Guid? _categoryId;
+    private string? _note;
+    private (decimal, DateTime?, Guid?, string?) _original;
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _loadError;
+    private string? _formError;
+    private Problem? _problem;
+
+    private bool CanSave => _amount > 0 && _date is not null && _categoryId is not null;
+
+    private bool IsDirty => (_amount, _date, _categoryId, _note) != _original;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        var categories = await Categories.ListAsync();
+        _categories = categories.IsSuccess ? categories.Value! : [];
+
+        if (Id is { } id)
+        {
+            var result = await Expenses.GetAsync(id);
+            if (!result.IsSuccess)
+            {
+                // Someone else's expense is a 404 too: the page never reveals that it exists.
+                _loadError = result.Status == 404 ? "Expense not found" : ApiMessages.For(result);
+                _loading = false;
+                return;
+            }
+
+            _editing = result.Value!;
+            _amount = _editing.Amount;
+            _date = _editing.OccurredOn.ToDateTime(TimeOnly.MinValue);
+            _categoryId = _editing.Category.Id;
+            _note = _editing.Note;
+        }
+
+        _original = (_amount, _date, _categoryId, _note);
+        _loading = false;
+    }
+
+    private bool HasError(string field) => ErrorFor(field) is not null;
+
+    private string? ErrorFor(string field) =>
+        _problem?.Errors?.TryGetValue(field, out var messages) == true ? messages.FirstOrDefault() : null;
+
+    private async Task SaveAsync()
+    {
+        if (_saving || !CanSave)
+        {
+            return;
+        }
+
+        _saving = true;
+        _formError = null;
+        _problem = null;
+
+        var date = DateOnly.FromDateTime(_date!.Value);
+        var result = IsEdit
+            ? await Expenses.UpdateAsync(Id!.Value, new UpdateExpenseRequest(_amount, date, _categoryId!.Value, _note))
+            : await Expenses.CreateAsync(new CreateExpenseRequest(_amount, date, _categoryId!.Value, _note));
+
+        _saving = false;
+
+        if (result.IsSuccess)
+        {
+            Snackbar.Add(IsEdit ? "Expense updated." : "Expense added.", Severity.Success);
+            Navigation.NavigateTo("/expenses");
+            return;
+        }
+
+        _problem = result.Problem;
+        if (result.Status != 400 || _problem?.Errors is null || _problem.Errors.Count == 0)
+        {
+            _formError = ApiMessages.For(result);
+        }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await CancelAsync();
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        if (IsDirty && !await ConfirmDialog.AskAsync(Dialogs, "Discard changes?", "Your changes to this expense will be lost.", "Discard"))
+        {
+            return;
+        }
+
+        Navigation.NavigateTo("/expenses");
+    }
+}

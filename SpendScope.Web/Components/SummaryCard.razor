@@ -1,0 +1,18 @@
+<MudPaper Elevation="0" Outlined="true" Class="pa-4 d-flex flex-column gap-1" Style="height:100%">
+    <div class="d-flex align-center gap-2">
+        <MudIcon Icon="@Icon" Size="Size.Small" Color="Color.Primary" aria-hidden="true" />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">@Label</MudText>
+    </div>
+    <MudText Typo="Typo.h5" Class="money" Style="font-weight:600">@Value</MudText>
+    @if (!string.IsNullOrEmpty(Caption))
+    {
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">@Caption</MudText>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Value { get; set; } = string.Empty;
+    [Parameter] public string? Caption { get; set; }
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Insights;
+}

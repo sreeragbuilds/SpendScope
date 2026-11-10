@@ -1,0 +1,204 @@
+@page "/expenses"
+@attribute [Authorize]
+@inject ExpenseApiClient Expenses
+@inject CategoryApiClient Categories
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject SpendScope.Web.Services.Browser.BrowserStorage Browser
+
+<PageTitle>Expenses · SpendScope</PageTitle>
+
+<div class="page-header">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Expenses</MudText>
+    <div class="d-flex gap-2">
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Download" OnClick="ExportAsync" Disabled="_exporting">Export CSV</MudButton>
+        <MudButton Href="/expenses/new" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add">Add expense</MudButton>
+    </div>
+</div>
+
+<MudPaper Outlined="true" Class="pa-4 mb-4">
+    <MudStack Spacing="3">
+        <DateRangePicker From="_from" To="_to" RangeChanged="OnRangeChanged" />
+        <div class="d-flex flex-wrap gap-3 align-center">
+            <MudSelect T="Guid?" Value="_categoryId" ValueChanged="OnCategoryChanged" Label="Category" Clearable="true"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:220px;max-width:260px">
+                @foreach (var c in _categories)
+                {
+                    <MudSelectItem T="Guid?" Value="@c.Id"><CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" /></MudSelectItem>
+                }
+            </MudSelect>
+            <MudNumericField T="decimal?" Value="_minAmount" ValueChanged="v => OnAmountChanged(v, isMin: true)" Label="Min amount" Min="0"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" HideSpinButtons="true" Clearable="true" Style="max-width:150px" DebounceInterval="400" />
+            <MudNumericField T="decimal?" Value="_maxAmount" ValueChanged="v => OnAmountChanged(v, isMin: false)" Label="Max amount" Min="0"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" HideSpinButtons="true" Clearable="true" Style="max-width:150px" DebounceInterval="400" />
+            <MudTextField T="string" @bind-Value="_noteSearch" Label="Search notes (this page)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Clearable="true" Style="max-width:260px" />
+        </div>
+    </MudStack>
+</MudPaper>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+}
+
+<MudTable @ref="_table" T="ExpenseDto" ServerData="LoadAsync" Dense="true" Hover="true" Outlined="true" Elevation="0"
+          Filter="MatchesNote" RowsPerPage="20" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Primary">
+    <HeaderContent>
+        <MudTh><MudTableSortLabel T="ExpenseDto" SortLabel="date" InitialDirection="SortDirection.Descending">Date</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel T="ExpenseDto" SortLabel="category">Category</MudTableSortLabel></MudTh>
+        <MudTh Style="text-align:right"><MudTableSortLabel T="ExpenseDto" SortLabel="amount">Amount</MudTableSortLabel></MudTh>
+        <MudTh>Note</MudTh>
+        <MudTh Style="text-align:right"><span class="d-sr-only">Actions</span></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Date">@Format.Date(context.OccurredOn)</MudTd>
+        <MudTd DataLabel="Category"><CategoryBadge Name="@context.Category.Name" ColorHex="@context.Category.ColorHex" /></MudTd>
+        <MudTd DataLabel="Amount" Style="text-align:right" Class="money">@Format.Money(context.Amount, context.Currency)</MudTd>
+        <MudTd DataLabel="Note"><div class="note-cell" title="@context.Note">@context.Note</div></MudTd>
+        <MudTd Style="text-align:right;white-space:nowrap">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Href="@($"/expenses/{context.Id}/edit")" aria-label="@($"Edit expense of {Format.Money(context.Amount, context.Currency)}")" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteAsync(context)" aria-label="@($"Delete expense of {Format.Money(context.Amount, context.Currency)}")" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <EmptyState Title="No expenses match these filters" Message="Change the filters or add an expense." ActionText="Add an expense" ActionHref="/expenses/new" />
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new[] { 10, 20, 50, 100 }" />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private MudTable<ExpenseDto>? _table;
+    private List<CategoryDto> _categories = [];
+    private DateOnly _from;
+    private DateOnly _to;
+    private Guid? _categoryId;
+    private decimal? _minAmount;
+    private decimal? _maxAmount;
+    private string? _noteSearch;
+    private string? _error;
+    private bool _exporting;
+    private TableState? _lastState;
+
+    protected override async Task OnInitializedAsync()
+    {
+        (_from, _to) = DateRangePicker.PresetRange("year", LocalDate.Today);
+        var categories = await Categories.ListAsync();
+        if (categories.IsSuccess)
+        {
+            _categories = categories.Value!;
+        }
+    }
+
+    private ExpenseQuery CurrentQuery(TableState? state = null) => new()
+    {
+        From = _from,
+        To = _to,
+        CategoryId = _categoryId,
+        MinAmount = _minAmount,
+        MaxAmount = _maxAmount,
+        SortBy = state?.SortDirection is SortDirection.None or null ? "date" : state.SortLabel,
+        SortDir = state?.SortDirection == SortDirection.Ascending ? "asc" : "desc",
+        Page = state is null ? null : state.Page + 1,
+        PageSize = state?.PageSize,
+    };
+
+    private async Task<TableData<ExpenseDto>> LoadAsync(TableState state, CancellationToken ct)
+    {
+        _lastState = state;
+        var result = await Expenses.ListAsync(CurrentQuery(state), ct);
+        if (!result.IsSuccess)
+        {
+            _error = result.FieldError("minAmount") ?? result.FieldError("to") ?? ApiMessages.For(result);
+            return new TableData<ExpenseDto> { Items = [], TotalItems = 0 };
+        }
+
+        _error = null;
+        return new TableData<ExpenseDto> { Items = result.Value!.Items, TotalItems = result.Value.TotalCount };
+    }
+
+    /// <summary>v1: note search filters the current page only (spec 19.6).</summary>
+    private bool MatchesNote(ExpenseDto e) =>
+        string.IsNullOrWhiteSpace(_noteSearch) || (e.Note?.Contains(_noteSearch, StringComparison.CurrentCultureIgnoreCase) ?? false);
+
+    private Task OnRangeChanged((DateOnly From, DateOnly To) range)
+    {
+        (_from, _to) = range;
+        return ReloadAsync();
+    }
+
+    private Task OnCategoryChanged(Guid? id)
+    {
+        _categoryId = id;
+        return ReloadAsync();
+    }
+
+    private Task OnAmountChanged(decimal? value, bool isMin)
+    {
+        if (isMin) _minAmount = value; else _maxAmount = value;
+        return ReloadAsync();
+    }
+
+    private Task ReloadAsync() => _table?.ReloadServerData() ?? Task.CompletedTask;
+
+    private async Task DeleteAsync(ExpenseDto expense)
+    {
+        var confirmed = await ConfirmDialog.AskAsync(
+            Dialogs,
+            "Delete expense?",
+            $"{Format.Money(expense.Amount, expense.Currency)} on {Format.Date(expense.OccurredOn)} ({expense.Category.Name}) will be deleted.",
+            "Delete");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var result = await Expenses.DeleteAsync(expense.Id);
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add(ApiMessages.For(result), Severity.Error);
+            return;
+        }
+
+        await ReloadAsync();
+
+        // Undo re-creates the expense from the original values; it gets a new ID (spec 19.6).
+        Snackbar.Add("Expense deleted.", Severity.Normal, config =>
+        {
+            config.Action = "Undo";
+            config.ActionColor = Color.Primary;
+            config.VisibleStateDuration = 5000;
+            config.OnClick = async _ =>
+            {
+                var restored = await Expenses.CreateAsync(new CreateExpenseRequest(expense.Amount, expense.OccurredOn, expense.Category.Id, expense.Note));
+                if (restored.IsSuccess)
+                {
+                    Snackbar.Add("Expense restored.", Severity.Success);
+                    await InvokeAsync(ReloadAsync);
+                }
+                else
+                {
+                    Snackbar.Add(ApiMessages.For(restored), Severity.Error);
+                }
+            };
+        });
+    }
+
+    private async Task ExportAsync()
+    {
+        _exporting = true;
+        var result = await Expenses.ExportAsync(CurrentQuery(_lastState));
+        _exporting = false;
+
+        if (result.IsSuccess)
+        {
+            await Browser.DownloadAsync(result.Value.FileName, "text/csv", result.Value.Content);
+        }
+        else
+        {
+            Snackbar.Add(ApiMessages.For(result), Severity.Error);
+        }
+    }
+}

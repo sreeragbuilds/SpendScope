@@ -1,0 +1,113 @@
+@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@inject AdminApiClient Admin
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Users · SpendScope admin</PageTitle>
+
+<div class="page-header">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Users</MudText>
+    <MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Label="Search by email" Variant="Variant.Outlined" Margin="Margin.Dense"
+                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="350" Clearable="true" Style="max-width:320px" />
+</div>
+
+<MudTable @ref="_table" T="AdminUserDto" ServerData="LoadAsync" Dense="true" Hover="true" Outlined="true" Elevation="0" RowsPerPage="20" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Email</MudTh>
+        <MudTh>Display name</MudTh>
+        <MudTh>Roles</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Created</MudTh>
+        <MudTh Style="text-align:right"><span class="d-sr-only">Actions</span></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Email">@context.Email</MudTd>
+        <MudTd DataLabel="Display name">@context.DisplayName</MudTd>
+        <MudTd DataLabel="Roles">
+            @foreach (var role in context.Roles)
+            {
+                <MudChip T="string" Size="Size.Small" Color="@(role == "Admin" ? Color.Secondary : Color.Default)" Text="@role" />
+            }
+        </MudTd>
+        <MudTd DataLabel="Status">
+            @if (context.IsLocked)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Error" Icon="@Icons.Material.Filled.Lock" Text="Locked" />
+            }
+            else
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined" Text="Active" />
+            }
+        </MudTd>
+        <MudTd DataLabel="Created">@Format.Date(context.CreatedAtUtc)</MudTd>
+        <MudTd Style="text-align:right">
+            @{ var self = context.Id == _me; }
+            @if (context.IsLocked)
+            {
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Disabled="self" OnClick="() => SetLockAsync(context, false)">Unlock</MudButton>
+            }
+            else
+            {
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Disabled="self" OnClick="() => SetLockAsync(context, true)"
+                           title="@(self ? "You can't lock your own account." : null)">Lock</MudButton>
+            }
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-4">No users match.</MudText></NoRecordsContent>
+    <PagerContent><MudTablePager PageSizeOptions="new[] { 10, 20, 50, 100 }" /></PagerContent>
+</MudTable>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private MudTable<AdminUserDto>? _table;
+    private string? _search;
+    private Guid _me;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            _me = (await AuthState).User.UserId();
+        }
+    }
+
+    private async Task<TableData<AdminUserDto>> LoadAsync(TableState state, CancellationToken ct)
+    {
+        var result = await Admin.ListUsersAsync(state.Page + 1, state.PageSize, _search, ct);
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add(ApiMessages.For(result), Severity.Error);
+            return new TableData<AdminUserDto> { Items = [], TotalItems = 0 };
+        }
+
+        return new TableData<AdminUserDto> { Items = result.Value!.Items, TotalItems = result.Value.TotalCount };
+    }
+
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        return _table?.ReloadServerData() ?? Task.CompletedTask;
+    }
+
+    private async Task SetLockAsync(AdminUserDto user, bool locked)
+    {
+        if (locked && !await ConfirmDialog.AskAsync(Dialogs, "Lock account?",
+                $"{user.Email} will be signed out everywhere and won't be able to sign in until unlocked.", "Lock"))
+        {
+            return;
+        }
+
+        var result = locked ? await Admin.LockAsync(user.Id) : await Admin.UnlockAsync(user.Id);
+        if (result.IsSuccess)
+        {
+            Snackbar.Add(locked ? $"{user.Email} locked." : $"{user.Email} unlocked.", Severity.Success);
+            await _table!.ReloadServerData();
+        }
+        else
+        {
+            Snackbar.Add(ApiMessages.For(result), Severity.Error);
+        }
+    }
+}

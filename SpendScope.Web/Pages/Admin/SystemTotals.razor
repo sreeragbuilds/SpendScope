@@ -1,0 +1,144 @@
+@page "/admin/totals"
+@attribute [Authorize(Roles = "Admin")]
+@inject AdminApiClient Admin
+
+<PageTitle>System totals · SpendScope admin</PageTitle>
+
+<div class="page-header">
+    <MudText Typo="Typo.h4" HtmlTag="h1">System totals</MudText>
+</div>
+
+<MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-4" Dense="true">
+    Aggregated across all users. Individual expenses are not shown, and custom categories are combined.
+</MudAlert>
+
+<MudPaper Outlined="true" Class="pa-4 mb-4">
+    <DateRangePicker From="_from" To="_to" RangeChanged="OnRangeChanged" />
+</MudPaper>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+}
+
+<MudGrid Spacing="3">
+    <MudItem xs="12" md="5">
+        <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-3">By category</MudText>
+            @if (_totals is null)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Circle" Width="240px" Height="240px" Class="mx-auto" />
+            }
+            else if (_totals.ExpenseCount == 0)
+            {
+                <EmptyState Title="No expenses in this range" />
+            }
+            else
+            {
+                <MudText Typo="Typo.h5" Class="money mb-1">@Format.Money(_totals.GrandTotal, "USD")</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-3">@_totals.ExpenseCount.ToString("N0") expenses · amounts summed as recorded</MudText>
+                <DoughnutChart Data="_slices" Currency="USD" AriaLabel="Doughnut chart of system-wide spending by category. The table lists every category." />
+            }
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="7">
+        <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-3">Categories</MudText>
+            @if (_totals is { ExpenseCount: > 0 })
+            {
+                <MudSimpleTable Dense="true" Elevation="0">
+                    <thead><tr><th scope="col">Category</th><th scope="col" style="text-align:right">Total</th><th scope="col" style="text-align:right">Count</th><th scope="col" style="text-align:right">Share</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in _totals.Categories)
+                        {
+                            <tr @key="c.Name">
+                                <td><CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" /></td>
+                                <td class="money" style="text-align:right">@Format.Money(c.Total, "USD")</td>
+                                <td style="text-align:right">@c.Count</td>
+                                <td style="text-align:right">@Format.Percent(c.Percentage)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12">
+        <MudPaper Outlined="true" Class="pa-4">
+            <div class="d-flex flex-wrap align-center justify-space-between gap-3 mb-3">
+                <MudText Typo="Typo.h6" HtmlTag="h2">Monthly totals</MudText>
+                <MudSelect T="int" Value="_year" ValueChanged="OnYearChanged" Label="Year" Dense="true" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:140px">
+                    @for (var y = LocalDate.Today.Year; y >= LocalDate.Today.Year - 9; y--)
+                    {
+                        var year = y;
+                        <MudSelectItem Value="@year">@year</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+            @if (_monthly is not null)
+            {
+                <BarChart Labels="_monthLabels" Values="_monthValues" ColorHex="#B45309" Currency="USD"
+                          AriaLabel="@($"Bar chart of system-wide monthly totals for {_monthly.Year}.")" />
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private DateOnly _from;
+    private DateOnly _to;
+    private int _year = LocalDate.Today.Year;
+    private SystemCategoryTotalsDto? _totals;
+    private SystemMonthlyTotalsDto? _monthly;
+    private IReadOnlyList<ChartSlice> _slices = [];
+    private IReadOnlyList<string> _monthLabels = [];
+    private IReadOnlyList<decimal> _monthValues = [];
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        (_from, _to) = DateRangePicker.PresetRange("month", LocalDate.Today);
+        await Task.WhenAll(LoadTotalsAsync(), LoadMonthlyAsync());
+    }
+
+    private Task OnRangeChanged((DateOnly From, DateOnly To) range)
+    {
+        (_from, _to) = range;
+        return LoadTotalsAsync();
+    }
+
+    private Task OnYearChanged(int year)
+    {
+        _year = year;
+        return LoadMonthlyAsync();
+    }
+
+    private async Task LoadTotalsAsync()
+    {
+        var result = await Admin.CategoryTotalsAsync(_from, _to);
+        if (result.IsSuccess)
+        {
+            _totals = result.Value!;
+            _slices = _totals.Categories.Select(c => new ChartSlice(c.Name, c.Total, c.ColorHex)).ToList();
+        }
+        else
+        {
+            _error = ApiMessages.For(result);
+        }
+    }
+
+    private async Task LoadMonthlyAsync()
+    {
+        var result = await Admin.MonthlyAsync(_year);
+        if (result.IsSuccess)
+        {
+            _monthly = result.Value!;
+            _monthLabels = _monthly.Months.Select(m => Format.MonthShort(m.Month)).ToList();
+            _monthValues = _monthly.Months.Select(m => m.Total).ToList();
+        }
+        else
+        {
+            _error = ApiMessages.For(result);
+        }
+    }
+}

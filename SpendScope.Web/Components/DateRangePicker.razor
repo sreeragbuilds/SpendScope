@@ -1,0 +1,81 @@
+@* Spec 19.6: preset chips plus two date fields. Raises RangeChanged only for valid ranges. *@
+
+<div class="d-flex flex-wrap align-center gap-3">
+    <MudChipSet T="string" SelectedValue="@_preset" SelectedValueChanged="OnPresetChanged" SelectionMode="SelectionMode.SingleSelection"
+                CheckMark="false" Variant="Variant.Outlined" Color="Color.Primary" Class="range-presets" aria-label="Date range presets">
+        <MudChip T="string" Value="@("month")" Text="This month" />
+        <MudChip T="string" Value="@("3months")" Text="Last 3 months" />
+        <MudChip T="string" Value="@("year")" Text="This year" />
+        <MudChip T="string" Value="@("custom")" Text="Custom" />
+    </MudChipSet>
+
+    <MudDatePicker Label="From" Date="@ToDateTime(From)" DateChanged="d => OnDateChanged(d, isFrom: true)"
+                   DateFormat="d MMM yyyy" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:170px" />
+    <MudDatePicker Label="To" Date="@ToDateTime(To)" DateChanged="d => OnDateChanged(d, isFrom: false)"
+                   DateFormat="d MMM yyyy" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:170px"
+                   Error="@(_error is not null)" ErrorText="@_error" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DateOnly From { get; set; }
+    [Parameter, EditorRequired] public DateOnly To { get; set; }
+    [Parameter] public EventCallback<(DateOnly From, DateOnly To)> RangeChanged { get; set; }
+
+    /// <summary>Server limit (spec 16.3).</summary>
+    public const int MaxDays = 366;
+
+    private string? _preset;
+    private string? _error;
+
+    protected override void OnParametersSet() => _preset ??= DetectPreset(From, To, LocalDate.Today);
+
+    public static (DateOnly From, DateOnly To) PresetRange(string preset, DateOnly today) => preset switch
+    {
+        "3months" => (LocalDate.FirstOfMonth(today).AddMonths(-2), LocalDate.EndOfMonth(today)),
+        "year" => (new DateOnly(today.Year, 1, 1), new DateOnly(today.Year, 12, 31)),
+        _ => (LocalDate.FirstOfMonth(today), LocalDate.EndOfMonth(today)),
+    };
+
+    public static string DetectPreset(DateOnly from, DateOnly to, DateOnly today) =>
+        new[] { "month", "3months", "year" }.FirstOrDefault(p => PresetRange(p, today) == (from, to)) ?? "custom";
+
+    /// <summary>Null when the range is valid, otherwise the message to show.</summary>
+    public static string? Validate(DateOnly from, DateOnly to) =>
+        from > to ? "'From' must be on or before 'To'."
+        : to.DayNumber - from.DayNumber + 1 > MaxDays ? $"Choose at most {MaxDays} days."
+        : null;
+
+    private async Task OnPresetChanged(string? preset)
+    {
+        _preset = preset;
+        if (preset is null or "custom")
+        {
+            return;
+        }
+
+        var (from, to) = PresetRange(preset, LocalDate.Today);
+        _error = null;
+        await RangeChanged.InvokeAsync((from, to));
+    }
+
+    private async Task OnDateChanged(DateTime? value, bool isFrom)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        var date = DateOnly.FromDateTime(value.Value);
+        var from = isFrom ? date : From;
+        var to = isFrom ? To : date;
+
+        _preset = DetectPreset(from, to, LocalDate.Today);
+        _error = Validate(from, to);
+        if (_error is null)
+        {
+            await RangeChanged.InvokeAsync((from, to));
+        }
+    }
+
+    private static DateTime ToDateTime(DateOnly d) => d.ToDateTime(TimeOnly.MinValue);
+}

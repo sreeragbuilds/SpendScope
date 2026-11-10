@@ -1,3 +1,60 @@
 ﻿@inherits LayoutComponentBase
+@inject ThemeState ThemeState
+@inject AuthSession Session
+@inject NavigationManager Navigation
 
-@Body
+<Providers />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Dense="false">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       OnClick="() => _drawerOpen = !_drawerOpen" aria-label="Toggle navigation" />
+        <MudIcon Icon="@Icons.Material.Filled.DonutLarge" Class="ml-2 mr-2" aria-hidden="true" />
+        <MudText Typo="Typo.h6" Class="mr-4">SpendScope</MudText>
+        <MudSpacer />
+        <MudTooltip Text="@(ThemeState.IsDark ? "Switch to light mode" : "Switch to dark mode")">
+            <MudIconButton Icon="@(ThemeState.IsDark ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                           Color="Color.Inherit" OnClick="ThemeState.ToggleAsync"
+                           aria-label="@(ThemeState.IsDark ? "Switch to light mode" : "Switch to dark mode")" />
+        </MudTooltip>
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body2" Class="mx-3 d-none d-sm-flex">@context.User.Identity?.Name</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync">Logout</MudButton>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="1"
+               Variant="@DrawerVariant.Responsive" Breakpoint="Breakpoint.Md">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6">
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>@Body</ChildContent>
+                <ErrorContent>
+                    <MudAlert Severity="Severity.Error" Class="mb-4">
+                        Something went wrong on this page.
+                        <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="() => _errorBoundary?.Recover()">Try again</MudButton>
+                    </MudAlert>
+                </ErrorContent>
+            </ErrorBoundary>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private ErrorBoundary? _errorBoundary;
+
+    protected override void OnParametersSet() => _errorBoundary?.Recover();
+
+    private async Task LogoutAsync()
+    {
+        await Session.LogoutAsync();
+        Navigation.NavigateTo("/login", replace: true);
+    }
+}

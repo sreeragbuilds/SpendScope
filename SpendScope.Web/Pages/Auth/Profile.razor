@@ -1,0 +1,149 @@
+@page "/profile"
+@attribute [Authorize]
+@inject ProfileApiClient Profiles
+@inject AuthSession Session
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Profile · SpendScope</PageTitle>
+
+<div class="page-header">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Profile</MudText>
+</div>
+
+@if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+}
+else if (_profile is null)
+{
+    <MudSkeleton Height="200px" SkeletonType="SkeletonType.Rectangle" />
+}
+else
+{
+    <MudGrid Spacing="4">
+        <MudItem xs="12" md="6">
+            <MudPaper Outlined="true" Class="pa-6">
+                <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-4">Your details</MudText>
+                <form @onsubmit="SaveProfileAsync" @onsubmit:preventDefault novalidate>
+                    <MudStack Spacing="4">
+                        <MudTextField Value="_profile.Email" Label="Email" ReadOnly="true" Variant="Variant.Outlined" />
+                        <MudTextField @bind-Value="_displayName" Label="Display name" Variant="Variant.Outlined" MaxLength="50" Immediate="true"
+                                      Error="@(_profileResult?.FieldError("displayName") is not null)" ErrorText="@_profileResult?.FieldError("displayName")" />
+                        <MudSelect T="string" @bind-Value="_currency" Label="Default currency" Variant="Variant.Outlined"
+                                   HelperText="Used for new expenses. Existing expenses keep their currency.">
+                            @foreach (var c in SupportedCurrencies.All)
+                            {
+                                <MudSelectItem Value="@c">@c</MudSelectItem>
+                            }
+                        </MudSelect>
+                        <div>
+                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@_savingProfile">Save</MudButton>
+                        </div>
+                    </MudStack>
+                </form>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Outlined="true" Class="pa-6">
+                <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-4">Change password</MudText>
+                <form @onsubmit="ChangePasswordAsync" @onsubmit:preventDefault novalidate>
+                    <MudStack Spacing="4">
+                        <MudTextField @bind-Value="_current" Label="Current password" InputType="InputType.Password" Variant="Variant.Outlined"
+                                      autocomplete="current-password" Immediate="true"
+                                      Error="@(_passwordResult?.FieldError("currentPassword") is not null)" ErrorText="@_passwordResult?.FieldError("currentPassword")" />
+                        <MudTextField @bind-Value="_new" Label="New password" InputType="InputType.Password" Variant="Variant.Outlined"
+                                      autocomplete="new-password" Immediate="true"
+                                      Error="@(_passwordResult?.FieldError("newPassword") is not null)" ErrorText="@_passwordResult?.FieldError("newPassword")" />
+                        <MudTextField @bind-Value="_confirm" Label="Confirm new password" InputType="InputType.Password" Variant="Variant.Outlined"
+                                      autocomplete="new-password" Immediate="true"
+                                      Error="@(_confirm.Length > 0 && _confirm != _new)" ErrorText="Passwords don't match." />
+                        <div>
+                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                                       Disabled="@(_savingPassword || _current.Length == 0 || !PasswordPolicy.IsSatisfied(_new) || _new != _confirm)">Change password</MudButton>
+                        </div>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">Changing your password signs you out everywhere.</MudText>
+                    </MudStack>
+                </form>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync">Log out</MudButton>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private UserProfileDto? _profile;
+    private string? _loadError;
+    private string _displayName = string.Empty;
+    private string _currency = "USD";
+    private bool _savingProfile;
+    private ApiResult<UserProfileDto>? _profileResult;
+
+    private string _current = string.Empty;
+    private string _new = string.Empty;
+    private string _confirm = string.Empty;
+    private bool _savingPassword;
+    private ApiResult<Unit>? _passwordResult;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Profiles.GetAsync();
+        if (result.IsSuccess)
+        {
+            _profile = result.Value!;
+            _displayName = _profile.DisplayName;
+            _currency = _profile.DefaultCurrency;
+        }
+        else
+        {
+            _loadError = ApiMessages.For(result);
+        }
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        _savingProfile = true;
+        _profileResult = await Profiles.UpdateAsync(new UpdateProfileRequest(_displayName.Trim(), _currency));
+        _savingProfile = false;
+
+        if (_profileResult.IsSuccess)
+        {
+            _profile = _profileResult.Value!;
+            Snackbar.Add("Profile saved.", Severity.Success);
+            // The display name lives in the access token; refresh so the app bar updates.
+            await Session.RefreshAsync();
+        }
+        else if (_profileResult.Status != 400)
+        {
+            Snackbar.Add(ApiMessages.For(_profileResult), Severity.Error);
+        }
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        _savingPassword = true;
+        _passwordResult = await Profiles.ChangePasswordAsync(new ChangePasswordRequest(_current, _new));
+        _savingPassword = false;
+
+        if (_passwordResult.IsSuccess)
+        {
+            Snackbar.Add("Password changed. Please sign in again.", Severity.Success);
+            await Session.SignOutLocallyAsync();
+            Navigation.NavigateTo("/login", replace: true);
+        }
+        else if (_passwordResult.Status != 400)
+        {
+            Snackbar.Add(ApiMessages.For(_passwordResult), Severity.Error);
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Session.LogoutAsync();
+        Navigation.NavigateTo("/login", replace: true);
+    }
+}

@@ -11,6 +11,7 @@
     <Deterministic>true</Deterministic>
     <!-- Required for IDE0005 (unused usings) to be enforced at build time; CS1591 is noise for an app. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- CS1591: missing XML docs. CS1573: documenting one record parameter must not force docs on all. -->
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
   </PropertyGroup>
 </Project>

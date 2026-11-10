@@ -1,0 +1,14 @@
+<MudNavMenu Class="pt-2" aria-label="Main">
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+    <MudNavLink Href="/expenses" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ReceiptLong">Expenses</MudNavLink>
+    <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category">Categories</MudNavLink>
+    <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.Person">Profile</MudNavLink>
+
+    @* Admin section only for the Admin role (spec 19.2). The API enforces this independently. *@
+    <AuthorizeView Roles="Admin">
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.overline" Class="px-4">Admin</MudText>
+        <MudNavLink Href="/admin/users" Icon="@Icons.Material.Filled.ManageAccounts">Users</MudNavLink>
+        <MudNavLink Href="/admin/totals" Icon="@Icons.Material.Filled.Insights">Totals</MudNavLink>
+    </AuthorizeView>
+</MudNavMenu>

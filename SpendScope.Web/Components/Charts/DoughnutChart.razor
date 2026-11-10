@@ -1,0 +1,34 @@
+@implements IAsyncDisposable
+@inject ChartInterop Charts
+
+<div class="chart-box doughnut">
+    <canvas id="@CanvasId" role="img" aria-label="@AriaLabel"></canvas>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<ChartSlice> Data { get; set; } = [];
+    [Parameter] public string Currency { get; set; } = "USD";
+    [Parameter] public string CanvasId { get; set; } = $"chart-{Guid.NewGuid():N}";
+    [Parameter] public string AriaLabel { get; set; } = "Spending by category";
+
+    private IReadOnlyList<ChartSlice>? _rendered;
+    private bool _ready;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        _ready = true;
+        if (!ReferenceEquals(_rendered, Data))
+        {
+            _rendered = Data;
+            await Charts.RenderDoughnutAsync(CanvasId, Data, Currency);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_ready)
+        {
+            try { await Charts.DestroyAsync(CanvasId); } catch (JSDisconnectedException) { }
+        }
+    }
+}

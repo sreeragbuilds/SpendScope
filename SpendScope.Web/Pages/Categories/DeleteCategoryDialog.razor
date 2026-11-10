@@ -1,0 +1,60 @@
+@inject CategoryApiClient Categories
+
+<MudDialog>
+    <DialogContent>
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3" role="alert">@_error</MudAlert>
+        }
+        @if (Category.ExpenseCount == 0)
+        {
+            <MudText>Delete <strong>@Category.Name</strong>? No expenses use it.</MudText>
+        }
+        else
+        {
+            <MudText Class="mb-4">
+                <strong>@Category.Name</strong> is used by @Category.ExpenseCount expense(s).
+                Choose where to move them before deleting.
+            </MudText>
+            <MudSelect T="Guid?" @bind-Value="_replacementId" Label="Move expenses to" Variant="Variant.Outlined" Required="true">
+                @foreach (var c in Replacements)
+                {
+                    <MudSelectItem T="Guid?" Value="@c.Id"><CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" IsSystem="@c.IsSystem" /></MudSelectItem>
+                }
+            </MudSelect>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="DeleteAsync"
+                   Disabled="@(_busy || (Category.ExpenseCount > 0 && _replacementId is null))">Delete</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter, EditorRequired] public CategoryDto Category { get; set; } = default!;
+    [Parameter] public IReadOnlyList<CategoryDto> Replacements { get; set; } = [];
+
+    private Guid? _replacementId;
+    private bool _busy;
+    private string? _error;
+
+    private async Task DeleteAsync()
+    {
+        _busy = true;
+        var result = await Categories.DeleteAsync(Category.Id, Category.ExpenseCount > 0 ? _replacementId : null);
+        _busy = false;
+
+        if (result.IsSuccess)
+        {
+            MudDialog.Close(DialogResult.Ok(true));
+            return;
+        }
+
+        // The count can be stale (e.g. an expense was added in another tab).
+        _error = result.HasCode(ErrorCodes.ReplacementRequired)
+            ? "Expenses now use this category. Choose a replacement."
+            : ApiMessages.For(result);
+    }
+}

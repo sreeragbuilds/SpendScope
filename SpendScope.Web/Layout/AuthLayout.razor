@@ -1,0 +1,16 @@
+@inherits LayoutComponentBase
+
+<Providers />
+
+<main class="auth-shell">
+    <div class="auth-card">
+        <div class="d-flex align-center justify-center gap-2 mb-6">
+            <MudIcon Icon="@Icons.Material.Filled.DonutLarge" Color="Color.Primary" Size="Size.Large" aria-hidden="true" />
+            <MudText Typo="Typo.h5" Style="font-weight:600">SpendScope</MudText>
+        </div>
+        <MudPaper Elevation="2" Class="pa-6 pa-sm-8">
+            @Body
+        </MudPaper>
+        <MudText Typo="Typo.caption" Align="Align.Center" Class="d-block mt-4 mud-text-secondary">See where every dollar goes.</MudText>
+    </div>
+</main>

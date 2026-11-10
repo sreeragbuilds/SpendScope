@@ -1,6 +1,22 @@
 ﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <NotAuthorized Context="auth">
+                @if (auth.User.Identity?.IsAuthenticated == true)
+                {
+                    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+                        <MudAlert Severity="Severity.Warning">You don't have permission to view this page.</MudAlert>
+                    </MudContainer>
+                }
+                else
+                {
+                    <RedirectToLogin />
+                }
+            </NotAuthorized>
+            <Authorizing>
+                <div class="d-flex justify-center mt-16"><MudProgressCircular Indeterminate="true" Color="Color.Primary" /></div>
+            </Authorizing>
+        </AuthorizeRouteView>
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
 </Router>

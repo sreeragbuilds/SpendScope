@@ -1,0 +1,240 @@
+@page "/"
+@attribute [Authorize]
+@implements IDisposable
+@inject ReportApiClient Reports
+@inject NavigationManager Navigation
+
+<PageTitle>Dashboard · SpendScope</PageTitle>
+
+<div class="page-header">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Dashboard</MudText>
+    <MudButton Href="/expenses/new" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add">Add expense</MudButton>
+</div>
+
+<MudPaper Outlined="true" Class="pa-4 mb-4">
+    <DateRangePicker From="_from" To="_to" RangeChanged="OnRangeChanged" />
+</MudPaper>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+}
+
+@if (_summary is null)
+{
+    <MudGrid Spacing="3" Class="mb-4">
+        @for (var i = 0; i < 4; i++)
+        {
+            <MudItem xs="12" sm="6" lg="3"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="104px" /></MudItem>
+        }
+        <MudItem xs="12" md="5"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="320px" /></MudItem>
+        <MudItem xs="12" md="7"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="320px" /></MudItem>
+    </MudGrid>
+}
+else
+{
+    <div aria-busy="@(_loading ? "true" : "false")" style="@(_loading ? "opacity:.6;transition:opacity .2s" : "transition:opacity .2s")">
+        <MudGrid Spacing="3" Class="mb-4">
+            <MudItem xs="12" sm="6" lg="3">
+                <SummaryCard Label="Total spend" Value="@Format.Money(_summary.GrandTotal, _summary.Currency)" Icon="@Icons.Material.Filled.Payments"
+                             Caption="@($"{Format.Date(_summary.From)} – {Format.Date(_summary.To)}")" />
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                <SummaryCard Label="Expenses" Value="@_summary.ExpenseCount.ToString("N0")" Icon="@Icons.Material.Filled.ReceiptLong" />
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                <SummaryCard Label="Average expense" Value="@Format.Money(_summary.AverageExpense, _summary.Currency)" Icon="@Icons.Material.Filled.Functions" />
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                @{ var top = _summary.Categories.FirstOrDefault(); }
+                <SummaryCard Label="Top category" Value="@(top?.Name ?? "–")" Icon="@Icons.Material.Filled.EmojiEvents"
+                             Caption="@(top is null ? null : $"{Format.Money(top.Total, _summary.Currency)} · {Format.Percent(top.Percentage)}")" />
+            </MudItem>
+        </MudGrid>
+
+        @if (_summary.ExpenseCount == 0)
+        {
+            <MudPaper Outlined="true" Class="mb-4">
+                <EmptyState Title="No expenses in this range" Message="Pick another range, or record your first expense."
+                            ActionText="Add an expense" ActionHref="/expenses/new" />
+            </MudPaper>
+        }
+        else
+        {
+            <MudGrid Spacing="3" Class="mb-4">
+                <MudItem xs="12" md="5">
+                    <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
+                        <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-3">Spending by category</MudText>
+                        <DoughnutChart Data="_slices" Currency="@_summary.Currency"
+                                       AriaLabel="@($"Doughnut chart of spending by category. Largest: {_summary.Categories[0].Name}, {Format.Percent(_summary.Categories[0].Percentage)}. The table lists every category.")" />
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="7">
+                    <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
+                        <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-3">Categories</MudText>
+                        <MudSimpleTable Dense="true" Hover="true" Elevation="0">
+                            <thead>
+                                <tr><th scope="col">Category</th><th scope="col" style="text-align:right">Total</th><th scope="col" style="text-align:right">Count</th><th scope="col" style="text-align:right">Share</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in _summary.Categories)
+                                {
+                                    <tr @key="c.CategoryId">
+                                        <td><CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" /></td>
+                                        <td class="money" style="text-align:right">@Format.Money(c.Total, _summary.Currency)</td>
+                                        <td style="text-align:right">@c.Count</td>
+                                        <td style="text-align:right">@Format.Percent(c.Percentage)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-2">Percentages are rounded and may not add up to exactly 100%.</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+
+        <MudPaper Outlined="true" Class="pa-4">
+            <div class="d-flex flex-wrap align-center justify-space-between gap-3 mb-3">
+                <MudText Typo="Typo.h6" HtmlTag="h2">Monthly totals</MudText>
+                <MudSelect T="int" Value="_year" ValueChanged="OnYearChanged" Label="Year" Dense="true" Variant="Variant.Outlined"
+                           Margin="Margin.Dense" Style="max-width:140px">
+                    @for (var y = LocalDate.Today.Year; y >= LocalDate.Today.Year - 9; y--)
+                    {
+                        var year = y;
+                        <MudSelectItem Value="@year">@year</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+            @if (_monthly is not null)
+            {
+                <BarChart Labels="_monthLabels" Values="_monthValues" Currency="@_monthly.Currency"
+                          AriaLabel="@($"Bar chart of monthly totals for {_monthly.Year}. The table below lists each month.")" />
+                <MudExpansionPanels Elevation="0" Class="mt-2">
+                    <MudExpansionPanel Text="Show as table">
+                        <MudSimpleTable Dense="true" Elevation="0">
+                            <thead><tr><th scope="col">Month</th><th scope="col" style="text-align:right">Total</th><th scope="col" style="text-align:right">Count</th></tr></thead>
+                            <tbody>
+                                @foreach (var m in _monthly.Months)
+                                {
+                                    <tr><td>@Format.MonthShort(m.Month)</td><td class="money" style="text-align:right">@Format.Money(m.Total, _monthly.Currency)</td><td style="text-align:right">@m.Count</td></tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </MudExpansionPanel>
+                </MudExpansionPanels>
+            }
+        </MudPaper>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "from")] public string? FromQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "to")] public string? ToQuery { get; set; }
+
+    private DateOnly _from;
+    private DateOnly _to;
+    private int _year = LocalDate.Today.Year;
+    private CategorySummaryDto? _summary;
+    private MonthlyTotalsDto? _monthly;
+    private IReadOnlyList<ChartSlice> _slices = [];
+    private IReadOnlyList<string> _monthLabels = [];
+    private IReadOnlyList<decimal> _monthValues = [];
+    private bool _loading;
+    private string? _error;
+    private CancellationTokenSource? _debounce;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Range from the URL (spec 19.6), falling back to the current month (spec 16.3).
+        var today = LocalDate.Today;
+        var from = LocalDate.Parse(FromQuery);
+        var to = LocalDate.Parse(ToQuery);
+        (_from, _to) = from is { } f && to is { } t && DateRangePicker.Validate(f, t) is null
+            ? (f, t)
+            : DateRangePicker.PresetRange("month", today);
+
+        await LoadAsync(includeMonthly: true, CancellationToken.None);
+    }
+
+    private async Task OnRangeChanged((DateOnly From, DateOnly To) range)
+    {
+        (_from, _to) = range;
+        Navigation.NavigateTo($"/?from={LocalDate.Iso(_from)}&to={LocalDate.Iso(_to)}", replace: true);
+
+        // Debounce: wait 300 ms for further changes before fetching (spec 19.6).
+        _debounce?.Cancel();
+        _debounce?.Dispose();
+        _debounce = new CancellationTokenSource();
+        var token = _debounce.Token;
+        try
+        {
+            await Task.Delay(300, token);
+            await LoadAsync(includeMonthly: false, token);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private async Task OnYearChanged(int year)
+    {
+        _year = year;
+        var monthly = await Reports.MonthlyAsync(year);
+        ApplyMonthly(monthly);
+    }
+
+    private async Task LoadAsync(bool includeMonthly, CancellationToken ct)
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        // Summary and monthly in parallel (spec 19.6).
+        var summaryTask = Reports.SummaryAsync(_from, _to, ct);
+        Task<ApiResult<MonthlyTotalsDto>>? monthlyTask = includeMonthly ? Reports.MonthlyAsync(_year, ct) : null;
+        var summary = await summaryTask;
+        var monthly = monthlyTask is null ? null : await monthlyTask;
+
+        if (ct.IsCancellationRequested)
+        {
+            return;
+        }
+
+        if (summary.IsSuccess)
+        {
+            _summary = summary.Value!;
+            _slices = _summary.Categories.Select(c => new ChartSlice(c.Name, c.Total, c.ColorHex)).ToList();
+        }
+        else
+        {
+            _error = ApiMessages.For(summary);
+        }
+
+        if (monthly is not null)
+        {
+            ApplyMonthly(monthly);
+        }
+
+        _loading = false;
+    }
+
+    private void ApplyMonthly(ApiResult<MonthlyTotalsDto> monthly)
+    {
+        if (!monthly.IsSuccess)
+        {
+            _error ??= ApiMessages.For(monthly);
+            return;
+        }
+
+        _monthly = monthly.Value!;
+        _monthLabels = _monthly.Months.Select(m => Format.MonthShort(m.Month)).ToList();
+        _monthValues = _monthly.Months.Select(m => m.Total).ToList();
+    }
+
+    public void Dispose()
+    {
+        _debounce?.Cancel();
+        _debounce?.Dispose();
+    }
+}

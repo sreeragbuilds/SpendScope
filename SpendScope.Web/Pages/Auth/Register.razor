@@ -1,0 +1,94 @@
+@page "/register"
+@layout AuthLayout
+@inject AccountApiClient Accounts
+@inject AuthSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Create account · SpendScope</PageTitle>
+
+<MudText Typo="Typo.h5" HtmlTag="h1" Class="mb-1">Create your account</MudText>
+<MudText Typo="Typo.body2" Class="mud-text-secondary mb-6">Track an expense in under a minute.</MudText>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4" role="alert">@_error</MudAlert>
+}
+
+<form @onsubmit="SubmitAsync" @onsubmit:preventDefault novalidate>
+    <MudStack Spacing="4">
+        <MudTextField @bind-Value="_email" Label="Email" InputType="InputType.Email" Variant="Variant.Outlined"
+                      autocomplete="email" Immediate="true" Error="@(_result?.FieldError("email") is not null)" ErrorText="@_result?.FieldError("email")" />
+        <MudTextField @bind-Value="_displayName" Label="Display name" Variant="Variant.Outlined" autocomplete="nickname"
+                      Immediate="true" MaxLength="50" Error="@(_result?.FieldError("displayName") is not null)" ErrorText="@_result?.FieldError("displayName")" />
+        <MudTextField @bind-Value="_password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined"
+                      autocomplete="new-password" Immediate="true" Error="@(_result?.FieldError("password") is not null)" ErrorText="@_result?.FieldError("password")" />
+
+        @{ var rules = PasswordPolicy.Evaluate(_password); var met = rules.Count(r => r.Met); }
+        <div aria-live="polite">
+            <MudProgressLinear Value="@(met * 100.0 / rules.Count)" Color="@StrengthColor(met, rules.Count)" Rounded="true" Size="Size.Small"
+                               aria-label="Password strength" />
+            <MudList T="string" Dense="true" Class="mt-1" ReadOnly="true">
+                @foreach (var (rule, ok) in rules)
+                {
+                    <MudListItem T="string" Icon="@(ok ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.Circle)"
+                                 IconColor="@(ok ? Color.Success : Color.Default)" Dense="true">
+                        <MudText Typo="Typo.caption">@rule<span class="d-sr-only">@(ok ? " (met)" : " (not met)")</span></MudText>
+                    </MudListItem>
+                }
+            </MudList>
+        </div>
+
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" FullWidth="true"
+                   Disabled="@(_busy || !PasswordPolicy.IsSatisfied(_password) || string.IsNullOrWhiteSpace(_email) || _displayName.Trim().Length < 2)">
+            @if (_busy)
+            {
+                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
+            }
+            Create account
+        </MudButton>
+    </MudStack>
+</form>
+
+<MudText Typo="Typo.body2" Class="mt-6" Align="Align.Center">
+    Already have an account? <MudLink Href="/login">Sign in</MudLink>
+</MudText>
+
+@code {
+    private string _email = string.Empty;
+    private string _displayName = string.Empty;
+    private string _password = string.Empty;
+    private string? _error;
+    private bool _busy;
+    private ApiResult<UserDto>? _result;
+
+    private async Task SubmitAsync()
+    {
+        if (_busy || !PasswordPolicy.IsSatisfied(_password))
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        _result = await Accounts.RegisterAsync(new RegisterRequest(_email.Trim(), _password, _displayName.Trim()));
+
+        if (_result.IsSuccess)
+        {
+            var login = await Session.LoginAsync(_email.Trim(), _password);
+            _busy = false;
+            Navigation.NavigateTo(login.IsSuccess ? "/" : "/login", replace: true);
+            return;
+        }
+
+        _busy = false;
+        _error = _result.Status switch
+        {
+            409 => "An account with this email already exists.",
+            400 => null,
+            _ => ApiMessages.For(_result),
+        };
+    }
+
+    private static Color StrengthColor(int met, int total) =>
+        met == total ? Color.Success : met >= total - 2 ? Color.Warning : Color.Error;
+}

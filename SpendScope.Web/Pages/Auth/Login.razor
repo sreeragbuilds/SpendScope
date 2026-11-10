@@ -1,0 +1,84 @@
+@page "/login"
+@layout AuthLayout
+@inject AuthSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Sign in · SpendScope</PageTitle>
+
+<MudText Typo="Typo.h5" HtmlTag="h1" Class="mb-1">Sign in</MudText>
+<MudText Typo="Typo.body2" Class="mud-text-secondary mb-6">Welcome back.</MudText>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4" role="alert" data-testid="login-error">@_error</MudAlert>
+}
+
+<form @onsubmit="SubmitAsync" @onsubmit:preventDefault novalidate>
+    <MudStack Spacing="4">
+        <MudTextField @bind-Value="_email" Label="Email" InputType="InputType.Email" Variant="Variant.Outlined"
+                      autocomplete="username" Required="true" Immediate="true" />
+        <MudTextField @bind-Value="_password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined"
+                      autocomplete="current-password" Required="true" Immediate="true" />
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                   Disabled="@(_busy || string.IsNullOrWhiteSpace(_email) || string.IsNullOrEmpty(_password))" FullWidth="true">
+            @if (_busy)
+            {
+                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
+            }
+            Sign in
+        </MudButton>
+    </MudStack>
+</form>
+
+<div class="d-flex justify-space-between flex-wrap gap-2 mt-6">
+    <MudLink Href="/forgot-password" Typo="Typo.body2">Forgot password?</MudLink>
+    <MudLink Href="/register" Typo="Typo.body2">Create an account</MudLink>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private string? _error;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Spec 19.3: signed-in users don't see the login page.
+        if (AuthState is not null && (await AuthState).User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(SafeReturnUrl(ReturnUrl), replace: true);
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_busy || string.IsNullOrWhiteSpace(_email) || string.IsNullOrEmpty(_password))
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        var result = await Session.LoginAsync(_email.Trim(), _password);
+        _busy = false;
+
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo(SafeReturnUrl(ReturnUrl), replace: true);
+            return;
+        }
+
+        // Generic message on 401: never hint whether the email exists (spec 19.6).
+        _error = result.Status == 401 ? "Email or password is incorrect." : ApiMessages.For(result);
+        _password = string.Empty;
+    }
+
+    /// <summary>Only same-site relative paths, so the login page can't be used as an open redirect.</summary>
+    public static string SafeReturnUrl(string? returnUrl) =>
+        returnUrl is { Length: > 0 } url && url.StartsWith('/') && !url.StartsWith("//", StringComparison.Ordinal) && !url.StartsWith("/\\", StringComparison.Ordinal)
+            ? url
+            : "/";
+}

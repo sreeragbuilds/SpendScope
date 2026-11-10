@@ -23,6 +23,10 @@ internal static class ArchAssert
             list = list.And().DoNotResideInNamespace(ns);
         }
 
-        return list;
+        // Types the compiler synthesizes (e.g. <>z__ReadOnlyArray<T> for collection expressions,
+        // closures, state machines). Names starting with '<' cannot be written in C#.
+        return list
+            .And().DoNotHaveCustomAttribute(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute))
+            .And().DoNotHaveNameStartingWith("<");
     }
 }

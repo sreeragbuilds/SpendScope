@@ -1,0 +1,20 @@
+@* MudBlazor's required providers plus the theme, shared by both layouts. *@
+@implements IDisposable
+@inject ThemeState ThemeState
+
+<MudThemeProvider Theme="ThemeState.Theme" IsDarkMode="ThemeState.IsDark" />
+<MudPopoverProvider />
+<MudDialogProvider CloseOnEscapeKey="true" />
+<MudSnackbarProvider />
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        ThemeState.Changed += OnThemeChanged;
+        await ThemeState.InitializeAsync();
+    }
+
+    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => ThemeState.Changed -= OnThemeChanged;
+}

@@ -1,0 +1,98 @@
+@inject CategoryApiClient Categories
+
+<MudDialog>
+    <DialogContent>
+        @if (_formError is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3" role="alert">@_formError</MudAlert>
+        }
+        <form id="category-form" @onsubmit="SaveAsync" @onsubmit:preventDefault novalidate>
+            <MudStack Spacing="4">
+                <MudTextField @bind-Value="_name" Label="Name" Variant="Variant.Outlined" MaxLength="40" Counter="40" Immediate="true" AutoFocus="true"
+                              Error="@(_result?.FieldError("name") is not null)" ErrorText="@_result?.FieldError("name")" />
+                <div>
+                    <div class="d-flex align-center gap-2 mb-2">
+                        <MudText Typo="Typo.body2" id="palette-label">Color</MudText>
+                        @if (HexValid)
+                        {
+                            <span class="swatch" style="background:@_color;width:16px;height:16px" aria-hidden="true"></span>
+                        }
+                    </div>
+                    <div class="palette" role="group" aria-labelledby="palette-label">
+                        @foreach (var (hex, name) in Palette)
+                        {
+                            <button type="button" style="background:@hex" aria-pressed="@(string.Equals(_color, hex, StringComparison.OrdinalIgnoreCase) ? "true" : "false")"
+                                    aria-label="@name" title="@name" @onclick="() => _color = hex"></button>
+                        }
+                    </div>
+                </div>
+                <MudTextField @bind-Value="_color" Label="Hex color" Variant="Variant.Outlined" MaxLength="7" Immediate="true"
+                              Error="@(!HexValid || _result?.FieldError("colorHex") is not null)"
+                              ErrorText="@(HexValid ? _result?.FieldError("colorHex") : "Use the form #RRGGBB.")" />
+            </MudStack>
+        </form>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()">Cancel</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" form="category-form" Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="@(_saving || string.IsNullOrWhiteSpace(_name) || !HexValid)">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public CategoryDto? Category { get; set; }
+
+    /// <summary>12 preset colors (spec 19.6), chosen to stay distinguishable in the charts.</summary>
+    public static readonly (string Hex, string Name)[] Palette =
+    [
+        ("#EF4444", "Red"), ("#F97316", "Orange"), ("#F59E0B", "Amber"), ("#84CC16", "Lime"),
+        ("#10B981", "Emerald"), ("#14B8A6", "Teal"), ("#06B6D4", "Cyan"), ("#3B82F6", "Blue"),
+        ("#6366F1", "Indigo"), ("#8B5CF6", "Violet"), ("#EC4899", "Pink"), ("#64748B", "Slate"),
+    ];
+
+    private string _name = string.Empty;
+    private string _color = Palette[7].Hex;
+    private bool _saving;
+    private string? _formError;
+    private ApiResult<CategoryDto>? _result;
+
+    private bool HexValid => _color is { Length: 7 } && _color[0] == '#' && _color.Skip(1).All(Uri.IsHexDigit);
+
+    protected override void OnInitialized()
+    {
+        if (Category is not null)
+        {
+            _name = Category.Name;
+            _color = Category.ColorHex;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || string.IsNullOrWhiteSpace(_name) || !HexValid)
+        {
+            return;
+        }
+
+        _saving = true;
+        _formError = null;
+        _result = Category is null
+            ? await Categories.CreateAsync(new CreateCategoryRequest(_name.Trim(), _color.ToUpperInvariant()))
+            : await Categories.UpdateAsync(Category.Id, new UpdateCategoryRequest(_name.Trim(), _color.ToUpperInvariant()));
+        _saving = false;
+
+        if (_result.IsSuccess)
+        {
+            MudDialog.Close(DialogResult.Ok(_result.Value));
+            return;
+        }
+
+        _formError = _result.Status switch
+        {
+            409 => "You already have a category with this name (default categories count too).",
+            400 => null,
+            _ => ApiMessages.For(_result),
+        };
+    }
+}

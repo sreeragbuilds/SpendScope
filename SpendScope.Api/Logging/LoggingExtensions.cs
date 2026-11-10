@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
+using SpendScope.Infrastructure.Identity;
 
 namespace SpendScope.Api.Logging;
 
@@ -55,7 +56,7 @@ internal static class LoggingExtensions
 
             options.EnrichDiagnosticContext = (diagnostics, http) =>
             {
-                var userId = http.User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = http.User.FindFirstValue(TokenClaims.Subject);
                 if (userId is not null)
                 {
                     diagnostics.Set("UserId", userId);

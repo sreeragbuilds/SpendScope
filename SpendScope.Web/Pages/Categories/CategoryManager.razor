@@ -1,0 +1,128 @@
+@page "/categories"
+@attribute [Authorize]
+@inject CategoryApiClient Categories
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Categories · SpendScope</PageTitle>
+
+<div class="page-header">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Categories</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="() => EditAsync(null)">Add category</MudButton>
+</div>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+}
+
+@if (_categories is null)
+{
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="320px" />
+}
+else
+{
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="6">
+            <MudPaper Outlined="true">
+                <MudText Typo="Typo.subtitle1" HtmlTag="h2" Class="px-4 pt-4">Your categories</MudText>
+                @{ var own = _categories.Where(c => !c.IsSystem).ToList(); }
+                @if (own.Count == 0)
+                {
+                    <EmptyState Title="No custom categories yet" Message="Add one for spending the defaults don't cover." Icon="@Icons.Material.Outlined.Category" />
+                }
+                else
+                {
+                    <MudList T="CategoryDto" ReadOnly="true">
+                        @foreach (var c in own)
+                        {
+                            <MudListItem T="CategoryDto" @key="c.Id">
+                                <div class="d-flex align-center justify-space-between gap-2">
+                                    <div class="d-flex flex-column">
+                                        <CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" />
+                                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@Count(c)</MudText>
+                                    </div>
+                                    <div>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="() => EditAsync(c)" aria-label="@($"Edit {c.Name}")" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteAsync(c)" aria-label="@($"Delete {c.Name}")" />
+                                    </div>
+                                </div>
+                            </MudListItem>
+                        }
+                    </MudList>
+                }
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudPaper Outlined="true">
+                <MudText Typo="Typo.subtitle1" HtmlTag="h2" Class="px-4 pt-4">Default categories</MudText>
+                <MudText Typo="Typo.caption" Class="px-4 mud-text-secondary">Available to everyone. They can't be changed.</MudText>
+                <MudList T="CategoryDto" ReadOnly="true">
+                    @foreach (var c in _categories.Where(c => c.IsSystem))
+                    {
+                        <MudListItem T="CategoryDto" @key="c.Id">
+                            <div class="d-flex align-center justify-space-between gap-2">
+                                <CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" IsSystem="true" />
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">@Count(c)</MudText>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private List<CategoryDto>? _categories;
+    private string? _error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await Categories.ListAsync();
+        if (result.IsSuccess)
+        {
+            _categories = result.Value!;
+            _error = null;
+        }
+        else
+        {
+            _error = ApiMessages.For(result);
+            _categories ??= [];
+        }
+    }
+
+    private static string Count(CategoryDto c) => c.ExpenseCount == 1 ? "1 expense" : $"{c.ExpenseCount} expenses";
+
+    private async Task EditAsync(CategoryDto? category)
+    {
+        var parameters = new DialogParameters<CategoryDialog> { { x => x.Category, category } };
+        var dialog = await Dialogs.ShowAsync<CategoryDialog>(category is null ? "Add category" : "Edit category", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add(category is null ? "Category added." : "Category updated.", Severity.Success);
+            await LoadAsync();
+        }
+    }
+
+    private async Task DeleteAsync(CategoryDto category)
+    {
+        var parameters = new DialogParameters<DeleteCategoryDialog>
+        {
+            { x => x.Category, category },
+            { x => x.Replacements, _categories!.Where(c => c.Id != category.Id).ToList() },
+        };
+        var dialog = await Dialogs.ShowAsync<DeleteCategoryDialog>("Delete category", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add("Category deleted.", Severity.Success);
+            await LoadAsync();
+        }
+    }
+}

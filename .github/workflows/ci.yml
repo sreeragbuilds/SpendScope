@@ -1,0 +1,58 @@
+name: CI
+
+# Runs on every pull request into master and on pushes to master.
+# A pull request can only be merged once the "build-and-test" check passes (branch protection).
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET SDK (version pinned in global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore SpendScope.sln
+
+      # Warnings are errors for the whole solution (Directory.Build.props).
+      - name: Build
+        run: dotnet build SpendScope.sln --no-restore --configuration Release
+
+      - name: Unit tests
+        run: >-
+          dotnet test tests/SpendScope.UnitTests/SpendScope.UnitTests.csproj
+          --no-build --configuration Release --logger "trx;LogFileName=unit.trx"
+          --results-directory TestResults
+
+      # Architecture rules (ARCH-01 to ARCH-09) are fast and must hold on every change.
+      - name: Architecture tests
+        run: >-
+          dotnet test tests/SpendScope.ArchitectureTests/SpendScope.ArchitectureTests.csproj
+          --no-build --configuration Release --logger "trx;LogFileName=architecture.trx"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/*.trx
+          if-no-files-found: ignore

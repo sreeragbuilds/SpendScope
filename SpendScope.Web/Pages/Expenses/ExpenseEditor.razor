@@ -45,7 +45,7 @@ else
                         <MudSelectItem T="Guid?" Value="@c.Id"><CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" IsSystem="@c.IsSystem" /></MudSelectItem>
                     }
                 </MudSelect>
-                <MudTextField T="string" @bind-Value="_note" Label="Note (optional)" Variant="Variant.Outlined" Lines="3" AutoGrow="true"
+                <MudTextField T="string" @bind-Value="_note" Label="Note (optional)" Variant="Variant.Outlined" Lines="3" Sizing="InputSizing.Auto"
                               MaxLength="500" Counter="500" Immediate="true" Error="@HasError("note")" ErrorText="@ErrorFor("note")" />
                 <div class="d-flex gap-2">
                     <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_saving || !CanSave)">

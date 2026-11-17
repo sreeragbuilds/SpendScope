@@ -37,7 +37,8 @@
     </MudDrawer>
 
     <MudMainContent>
-        <MudContainer id="main-content" tabindex="-1" MaxWidth="MaxWidth.Large" Class="app-content">
+        <main id="main-content" tabindex="-1">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="app-content">
             <ErrorBoundary @ref="_errorBoundary">
                 <ChildContent>@Body</ChildContent>
                 <ErrorContent>
@@ -48,6 +49,7 @@
                 </ErrorContent>
             </ErrorBoundary>
         </MudContainer>
+        </main>
     </MudMainContent>
 </MudLayout>
 

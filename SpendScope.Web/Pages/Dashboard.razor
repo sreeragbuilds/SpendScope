@@ -6,99 +6,92 @@
 
 <PageTitle>Dashboard · SpendScope</PageTitle>
 
-<div class="page-header">
-    <MudText Typo="Typo.h4" HtmlTag="h1">Dashboard</MudText>
+<header class="page-header">
+    <h1>Dashboard</h1>
     <MudButton Href="/expenses/new" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add">Add expense</MudButton>
-</div>
+</header>
 
-<MudPaper Outlined="true" Class="pa-4 mb-4">
+<section class="ledger-section" aria-label="Date range">
     <DateRangePicker From="_from" To="_to" RangeChanged="OnRangeChanged" />
-</MudPaper>
+</section>
 
 @if (_error is not null)
 {
-    <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+    <MudAlert Severity="Severity.Error" Class="mb-4" role="alert">@_error</MudAlert>
 }
 
 @if (_summary is null)
 {
-    <MudGrid Spacing="3" Class="mb-4">
-        @for (var i = 0; i < 4; i++)
-        {
-            <MudItem xs="12" sm="6" lg="3"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="104px" /></MudItem>
-        }
-        <MudItem xs="12" md="5"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="320px" /></MudItem>
-        <MudItem xs="12" md="7"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="320px" /></MudItem>
-    </MudGrid>
+    <div class="ledger-section" aria-busy="true">
+        <MudSkeleton SkeletonType="SkeletonType.Text" Width="40%" Height="5rem" />
+        <MudSkeleton SkeletonType="SkeletonType.Text" Width="100%" Height="3rem" />
+    </div>
 }
 else
 {
-    <div aria-busy="@(_loading ? "true" : "false")" style="@(_loading ? "opacity:.6;transition:opacity .2s" : "transition:opacity .2s")">
-        <MudGrid Spacing="3" Class="mb-4">
-            <MudItem xs="12" sm="6" lg="3">
-                <SummaryCard Label="Total spend" Value="@Format.Money(_summary.GrandTotal, _summary.Currency)" Icon="@Icons.Material.Filled.Payments"
-                             Caption="@($"{Format.Date(_summary.From)} – {Format.Date(_summary.To)}")" />
-            </MudItem>
-            <MudItem xs="12" sm="6" lg="3">
-                <SummaryCard Label="Expenses" Value="@_summary.ExpenseCount.ToString("N0")" Icon="@Icons.Material.Filled.ReceiptLong" />
-            </MudItem>
-            <MudItem xs="12" sm="6" lg="3">
-                <SummaryCard Label="Average expense" Value="@Format.Money(_summary.AverageExpense, _summary.Currency)" Icon="@Icons.Material.Filled.Functions" />
-            </MudItem>
-            <MudItem xs="12" sm="6" lg="3">
-                @{ var top = _summary.Categories.FirstOrDefault(); }
-                <SummaryCard Label="Top category" Value="@(top?.Name ?? "–")" Icon="@Icons.Material.Filled.EmojiEvents"
-                             Caption="@(top is null ? null : $"{Format.Money(top.Total, _summary.Currency)} · {Format.Percent(top.Percentage)}")" />
-            </MudItem>
-        </MudGrid>
+    <div class="@(_loading ? "is-loading" : "")" aria-busy="@(_loading ? "true" : "false")">
+        <section class="hero" aria-labelledby="total-heading">
+            <h2 id="total-heading" class="hero-label">Total spend</h2>
+            <p class="hero-figure">@Format.Money(_summary.GrandTotal, _summary.Currency)</p>
+            <p class="hero-caption">@Format.Date(_summary.From) to @Format.Date(_summary.To)</p>
+        </section>
+
+        <dl class="stat-row" aria-label="Summary">
+            <SummaryCard Label="Expenses" Value="@_summary.ExpenseCount.ToString("N0")" />
+            <SummaryCard Label="Average expense" Value="@Format.Money(_summary.AverageExpense, _summary.Currency)" />
+            @{ var top = _summary.Categories.FirstOrDefault(); }
+            <SummaryCard Label="Top category" Value="@(top?.Name ?? "None")"
+                         Caption="@(top is null ? null : $"{Format.Money(top.Total, _summary.Currency)} · {Format.Percent(top.Percentage)}")" />
+        </dl>
 
         @if (_summary.ExpenseCount == 0)
         {
-            <MudPaper Outlined="true" Class="mb-4">
+            <div class="ledger-section">
                 <EmptyState Title="No expenses in this range" Message="Pick another range, or record your first expense."
                             ActionText="Add an expense" ActionHref="/expenses/new" />
-            </MudPaper>
+            </div>
         }
         else
         {
-            <MudGrid Spacing="3" Class="mb-4">
-                <MudItem xs="12" md="5">
-                    <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
-                        <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-3">Spending by category</MudText>
-                        <DoughnutChart Data="_slices" Currency="@_summary.Currency"
-                                       AriaLabel="@($"Doughnut chart of spending by category. Largest: {_summary.Categories[0].Name}, {Format.Percent(_summary.Categories[0].Percentage)}. The table lists every category.")" />
-                    </MudPaper>
-                </MudItem>
-                <MudItem xs="12" md="7">
-                    <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
-                        <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-3">Categories</MudText>
-                        <MudSimpleTable Dense="true" Hover="true" Elevation="0">
-                            <thead>
-                                <tr><th scope="col">Category</th><th scope="col" style="text-align:right">Total</th><th scope="col" style="text-align:right">Count</th><th scope="col" style="text-align:right">Share</th></tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var c in _summary.Categories)
-                                {
-                                    <tr @key="c.CategoryId">
-                                        <td><CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" /></td>
-                                        <td class="money" style="text-align:right">@Format.Money(c.Total, _summary.Currency)</td>
-                                        <td style="text-align:right">@c.Count</td>
-                                        <td style="text-align:right">@Format.Percent(c.Percentage)</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </MudSimpleTable>
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-2">Percentages are rounded and may not add up to exactly 100%.</MudText>
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
+            <div class="ledger-section two-up">
+                <section aria-labelledby="category-heading">
+                    <h2 id="category-heading">Spending by category</h2>
+                    <DoughnutChart Data="_slices" Currency="@_summary.Currency"
+                                   AriaLabel="@($"Doughnut chart of spending by category. Largest: {_summary.Categories[0].Name}, {Format.Percent(_summary.Categories[0].Percentage)}. The table lists every category.")" />
+                </section>
+
+                <section>
+                    <table class="ledger-table">
+                        <caption>Totals by category. Percentages are rounded and may not add up to exactly 100%.</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Category</th>
+                                <th scope="col" class="num">Total</th>
+                                <th scope="col" class="num">Count</th>
+                                <th scope="col" class="num">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in _summary.Categories)
+                            {
+                                <tr @key="c.CategoryId">
+                                    <td><CategoryBadge Name="@c.Name" ColorHex="@c.ColorHex" /></td>
+                                    <td class="num money">@Format.Money(c.Total, _summary.Currency)</td>
+                                    <td class="num">@c.Count</td>
+                                    <td class="num">@Format.Percent(c.Percentage)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </section>
+            </div>
         }
 
-        <MudPaper Outlined="true" Class="pa-4">
-            <div class="d-flex flex-wrap align-center justify-space-between gap-3 mb-3">
-                <MudText Typo="Typo.h6" HtmlTag="h2">Monthly totals</MudText>
-                <MudSelect T="int" Value="_year" ValueChanged="OnYearChanged" Label="Year" Dense="true" Variant="Variant.Outlined"
-                           Margin="Margin.Dense" Style="max-width:140px">
+        <section class="ledger-section" aria-labelledby="monthly-heading">
+            <div class="page-header" style="margin-block-end: var(--space-4)">
+                <h2 id="monthly-heading" class="section-title">Monthly totals</h2>
+                <MudSelect T="int" Value="_year" ValueChanged="OnYearChanged" Label="Year" Variant="Variant.Outlined"
+                           Margin="Margin.Dense" Style="max-width:9rem" aria-label="Year">
                     @for (var y = LocalDate.Today.Year; y >= LocalDate.Today.Year - 9; y--)
                     {
                         var year = y;
@@ -106,25 +99,32 @@ else
                     }
                 </MudSelect>
             </div>
+
             @if (_monthly is not null)
             {
                 <BarChart Labels="_monthLabels" Values="_monthValues" Currency="@_monthly.Currency"
                           AriaLabel="@($"Bar chart of monthly totals for {_monthly.Year}. The table below lists each month.")" />
-                <MudExpansionPanels Elevation="0" Class="mt-2">
-                    <MudExpansionPanel Text="Show as table">
-                        <MudSimpleTable Dense="true" Elevation="0">
-                            <thead><tr><th scope="col">Month</th><th scope="col" style="text-align:right">Total</th><th scope="col" style="text-align:right">Count</th></tr></thead>
-                            <tbody>
-                                @foreach (var m in _monthly.Months)
-                                {
-                                    <tr><td>@Format.MonthShort(m.Month)</td><td class="money" style="text-align:right">@Format.Money(m.Total, _monthly.Currency)</td><td style="text-align:right">@m.Count</td></tr>
-                                }
-                            </tbody>
-                        </MudSimpleTable>
-                    </MudExpansionPanel>
-                </MudExpansionPanels>
+                <details class="disclosure">
+                    <summary>Show as table</summary>
+                    <table class="ledger-table">
+                        <caption>Monthly totals for @_monthly.Year</caption>
+                        <thead>
+                            <tr><th scope="col">Month</th><th scope="col" class="num">Total</th><th scope="col" class="num">Count</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in _monthly.Months)
+                            {
+                                <tr>
+                                    <td>@Format.MonthShort(m.Month)</td>
+                                    <td class="num money">@Format.Money(m.Total, _monthly.Currency)</td>
+                                    <td class="num">@m.Count</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </details>
             }
-        </MudPaper>
+        </section>
     </div>
 }
 

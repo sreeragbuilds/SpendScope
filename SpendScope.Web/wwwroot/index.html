@@ -3,11 +3,31 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SpendScope</title>
-    <meta name="description" content="SpendScope: see where every dollar goes." />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SpendScope: see where every dollar goes</title>
+    <meta name="description" content="SpendScope is a personal expense tracker. Record spending in seconds, then see category totals and monthly trends at a glance." />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0F766E" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0E1726" media="(prefers-color-scheme: dark)" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph and social previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SpendScope" />
+    <meta property="og:title" content="SpendScope: see where every dollar goes" />
+    <meta property="og:description" content="Record expenses in seconds and see where your money goes by category and month." />
+    <meta name="twitter:card" content="summary" />
+
     <base href="/" />
     <link rel="icon" type="image/png" href="icon-192.png" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+
+    <!-- Fonts: a serif for headline figures and a sans for everything else. Preconnect starts the
+         connection early; display=swap shows text immediately with the fallback. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&display=swap" />
+
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="_content/MudBlazor/MudBlazor.min.css" />
     <link rel="stylesheet" href="css/app.css" />
@@ -15,19 +35,21 @@
 </head>
 
 <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
     <div id="app">
-        <div class="boot">
-            <svg class="loading-progress" aria-hidden="true">
+        <div class="boot" role="status" aria-live="polite">
+            <svg class="loading-progress" aria-hidden="true" focusable="false">
                 <circle r="40%" cx="50%" cy="50%" />
                 <circle r="40%" cx="50%" cy="50%" />
             </svg>
-            <div class="loading-progress-text"></div>
             <p class="boot-name">SpendScope</p>
+            <p class="boot-text">Loading your money&hellip;</p>
         </div>
     </div>
 
     <div id="blazor-error-ui" role="alert">
-        Something went wrong.
+        Something went wrong. Reload the page to continue.
         <a href="." class="reload">Reload</a>
         <button type="button" class="dismiss" aria-label="Dismiss">&times;</button>
     </div>
@@ -36,10 +58,10 @@
          refuses the file if the CDN ever serves different bytes. -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
             integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
-            crossorigin="anonymous"></script>
-    <script src="js/charts.js"></script>
-    <script src="js/browser.js"></script>
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+            crossorigin="anonymous" defer></script>
+    <script src="js/charts.js" defer></script>
+    <script src="js/browser.js" defer></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js" defer></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 </body>
 

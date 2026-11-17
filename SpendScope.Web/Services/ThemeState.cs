@@ -36,7 +36,22 @@ public sealed class ThemeState(BrowserStorage storage)
             TextPrimary = "#E2E8F0",
             TextSecondary = "#94A3B8",
         },
-        LayoutProperties = new LayoutProperties { DefaultBorderRadius = "10px" },
+        LayoutProperties = new LayoutProperties { DefaultBorderRadius = "6px" },
+        Typography = new Typography
+        {
+            // Serif for headings and headline figures, sans for everything else (see app.css tokens).
+            Default = new DefaultTypography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"] },
+            Body1 = new Body1Typography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontSize = "1rem", LineHeight = "1.6" },
+            Body2 = new Body2Typography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontSize = "0.9375rem", LineHeight = "1.55" },
+            Button = new ButtonTypography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontWeight = "600", TextTransform = "none" },
+            Caption = new CaptionTypography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontSize = "0.8125rem" },
+            H1 = new H1Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
+            H2 = new H2Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
+            H3 = new H3Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
+            H4 = new H4Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
+            H5 = new H5Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
+            H6 = new H6Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
+        },
     };
 
     public bool IsDark { get; private set; }

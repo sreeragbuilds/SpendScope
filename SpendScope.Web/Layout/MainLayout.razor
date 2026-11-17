@@ -6,11 +6,16 @@
 <Providers />
 
 <MudLayout>
-    <MudAppBar Elevation="1" Dense="false">
+    <MudAppBar Elevation="0" Class="app-bar" Dense="false">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
-                       OnClick="() => _drawerOpen = !_drawerOpen" aria-label="Toggle navigation" />
-        <MudIcon Icon="@Icons.Material.Filled.DonutLarge" Class="ml-2 mr-2" aria-hidden="true" />
-        <MudText Typo="Typo.h6" Class="mr-4">SpendScope</MudText>
+                       OnClick="() => _drawerOpen = !_drawerOpen"
+                       aria-label="@(_drawerOpen ? "Hide navigation" : "Show navigation")"
+                       aria-expanded="@(_drawerOpen ? "true" : "false")"
+                       aria-controls="app-navigation" />
+        <MudLink Href="/" Color="Color.Inherit" Underline="Underline.None" Class="app-brand">
+            <MudIcon Icon="@Icons.Material.Filled.DonutLarge" aria-hidden="true" />
+            <span>SpendScope</span>
+        </MudLink>
         <MudSpacer />
         <MudTooltip Text="@(ThemeState.IsDark ? "Switch to light mode" : "Switch to dark mode")">
             <MudIconButton Icon="@(ThemeState.IsDark ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
@@ -19,24 +24,24 @@
         </MudTooltip>
         <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body2" Class="mx-3 d-none d-sm-flex">@context.User.Identity?.Name</MudText>
+                <span class="app-user d-none d-sm-flex">@context.User.Identity?.Name</span>
                 <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync">Logout</MudButton>
+                           StartIcon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync">Log out</MudButton>
             </Authorized>
         </AuthorizeView>
     </MudAppBar>
 
-    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="1"
-               Variant="@DrawerVariant.Responsive" Breakpoint="Breakpoint.Md">
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="0"
+               Variant="@DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" id="app-navigation">
         <NavMenu />
     </MudDrawer>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6">
+        <MudContainer id="main-content" tabindex="-1" MaxWidth="MaxWidth.Large" Class="app-content">
             <ErrorBoundary @ref="_errorBoundary">
                 <ChildContent>@Body</ChildContent>
                 <ErrorContent>
-                    <MudAlert Severity="Severity.Error" Class="mb-4">
+                    <MudAlert Severity="Severity.Error" Class="mb-4" role="alert">
                         Something went wrong on this page.
                         <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="() => _errorBoundary?.Recover()">Try again</MudButton>
                     </MudAlert>

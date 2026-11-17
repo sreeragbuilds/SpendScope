@@ -27,11 +27,12 @@ internal sealed class GlobalExceptionHandler(IProblemDetailsService problemDetai
 
         if (status >= StatusCodes.Status500InternalServerError)
         {
-            logger.LogError(exception, "Unhandled exception for {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+            // Method and path come from the client, so they are not written to the log (log forging).
+            logger.LogError(exception, "Unhandled exception. Request {RequestId}", httpContext.TraceIdentifier);
         }
         else
         {
-            logger.LogInformation("Request rejected with {Status} {Code}: {Message}", status, code, exception.Message);
+            logger.LogInformation("Request {RequestId} rejected with {Status} {Code}", httpContext.TraceIdentifier, status, code);
         }
 
         httpContext.Response.StatusCode = status;

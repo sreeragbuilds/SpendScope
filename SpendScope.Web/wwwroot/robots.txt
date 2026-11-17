@@ -2,9 +2,9 @@ User-agent: *
 Allow: /
 Allow: /login
 Allow: /register
-Disallow: /api/
-Disallow: /admin/
-Disallow: /expenses/
+Disallow: /api
+Disallow: /admin
+Disallow: /expenses
 Disallow: /categories
 Disallow: /profile
 Disallow: /reset-password

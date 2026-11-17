@@ -63,7 +63,8 @@ public static class DatabaseInitializer
                 return;
             }
 
-            logger.LogInformation("Development admin {Email} created", email);
+            // The address is not logged: it is personal data, and logs are shared.
+            logger.LogInformation("Development admin created");
         }
 
         foreach (var role in new[] { Roles.User, Roles.Admin })

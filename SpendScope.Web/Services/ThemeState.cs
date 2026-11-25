@@ -14,7 +14,7 @@ public sealed class ThemeState(BrowserStorage storage)
     {
         PaletteLight = new PaletteLight
         {
-            Primary = "#635BFF",
+            Primary = "#5851EA",
             Secondary = "#425466",
             Tertiary = "#0570DE",
             Error = "#DF1B41",

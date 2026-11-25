@@ -113,7 +113,7 @@ p, li, dd {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--mud-palette-primary, #635BFF);
+    color: var(--mud-palette-primary, #5851EA);
 }
 
 .boot-text {
@@ -140,7 +140,7 @@ p, li, dd {
 }
 
 .loading-progress circle:last-child {
-    stroke: var(--mud-palette-primary, #635BFF);
+    stroke: var(--mud-palette-primary, #5851EA);
     stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
     transition: stroke-dasharray 0.05s ease-in-out;
 }

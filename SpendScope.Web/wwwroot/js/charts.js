@@ -31,6 +31,12 @@ window.spendscopeCharts = {
       };
     }
 
+    // Draw in 300 ms (the app's longest duration); not at all when the user asks for reduced motion.
+    config.options = config.options || {};
+    config.options.animation = matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? false
+      : { duration: 300, easing: "easeOutQuart" };
+
     delete config.compactTicks;
     delete config.currency;
     this.instances[canvasId] = new Chart(canvas, config);

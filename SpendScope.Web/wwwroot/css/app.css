@@ -23,11 +23,23 @@
     --radius: 6px;
     --rule: color-mix(in srgb, currentColor 16%, transparent);
     --muted: color-mix(in srgb, currentColor 70%, transparent);
+
+    /* Motion: four durations, ease-out when something enters, ease-in when it leaves.
+       Only transform and opacity are animated. */
+    --motion-100: 100ms;
+    --motion-150: 150ms;
+    --motion-200: 200ms;
+    --motion-300: 300ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
 }
 
 html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Reserve the scrollbar's space so the page does not shift when it appears. */
+    scrollbar-gutter: stable;
+    accent-color: var(--mud-palette-primary);
 }
 
 body {
@@ -493,9 +505,81 @@ h1[tabindex="-1"]:focus {
     content: "Something went wrong on this page.";
 }
 
+/* ---------- Every page shares the ledger look ---------- */
+
+/* Outlined cards and tables become ruled blocks, like the dashboard, on every page.
+   The sign-in panel keeps its border. */
+.mud-paper.mud-paper-outlined:not(.auth-panel),
+.mud-table.mud-table-outlined {
+    border: 0;
+    border-block-start: 1px solid var(--rule);
+    border-radius: 0;
+    background: transparent;
+}
+
+.mud-table.mud-table-outlined {
+    border-block-end: 1px solid var(--rule);
+}
+
+/* Table headings match the ledger tables: small and muted. */
+.mud-table-root .mud-table-head .mud-table-cell {
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+/* The current page is marked by a bar as well as a colour. */
+.mud-nav-link.active {
+    box-shadow: inset 3px 0 0 var(--mud-palette-primary);
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* One entrance when a page appears: each top-level block rises in, one after another.
+   A new page is a new set of elements, so this plays once per visit and never on re-render. */
+.app-content > *,
+.auth-card > * {
+    animation: rise-in var(--motion-300) var(--ease-out) backwards;
+}
+
+.app-content > :nth-child(2),
+.auth-card > :nth-child(2) {
+    animation-delay: var(--motion-100);
+}
+
+.app-content > :nth-child(3),
+.auth-card > :nth-child(3) {
+    animation-delay: var(--motion-150);
+}
+
+.app-content > :nth-child(n + 4) {
+    animation-delay: var(--motion-200);
+}
+
+/* A press nudges a button down 1px, so a click feels received. */
+.mud-button-root:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
 /* ---------- Respect user preferences ---------- */
 
 @media (prefers-reduced-motion: reduce) {
+    .mud-button-root:active:not(:disabled) {
+        transform: none;
+    }
+
     *,
     *::before,
     *::after {

@@ -42,15 +42,15 @@ public sealed class ThemeState(BrowserStorage storage)
             // Serif for headings and headline figures, sans for everything else (see app.css tokens).
             Default = new DefaultTypography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"] },
             Body1 = new Body1Typography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontSize = "1rem", LineHeight = "1.6" },
-            Body2 = new Body2Typography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontSize = "0.9375rem", LineHeight = "1.55" },
+            Body2 = new Body2Typography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontSize = "0.875rem", LineHeight = "1.55" },
             Button = new ButtonTypography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontWeight = "600", TextTransform = "none" },
-            Caption = new CaptionTypography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontSize = "0.8125rem" },
-            H1 = new H1Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
-            H2 = new H2Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
-            H3 = new H3Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
-            H4 = new H4Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
-            H5 = new H5Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
-            H6 = new H6Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500" },
+            Caption = new CaptionTypography { FontFamily = ["Instrument Sans", "system-ui", "sans-serif"], FontSize = "0.75rem" },
+            H1 = new H1Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500", LineHeight = "1.2" },
+            H2 = new H2Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500", LineHeight = "1.2" },
+            H3 = new H3Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500", LineHeight = "1.2" },
+            H4 = new H4Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500", LineHeight = "1.2" },
+            H5 = new H5Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500", LineHeight = "1.2" },
+            H6 = new H6Typography { FontFamily = ["Fraunces", "Georgia", "serif"], FontWeight = "500", LineHeight = "1.2" },
         },
     };
 

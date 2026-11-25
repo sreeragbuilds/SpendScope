@@ -121,7 +121,7 @@ p, li, dd {
 .boot-text {
     margin: 0;
     color: var(--muted);
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
 }
 
 .loading-progress {
@@ -281,7 +281,7 @@ h1[tabindex="-1"]:focus {
     margin: 0;
     color: var(--muted);
     font-family: var(--font-body);
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 400;
 }
 
@@ -290,8 +290,8 @@ h1[tabindex="-1"]:focus {
     font-family: var(--font-display);
     font-size: clamp(2.75rem, 2rem + 4vw, 5rem);
     font-weight: 500;
-    line-height: 1;
-    letter-spacing: -0.03em;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums lining-nums;
     overflow-wrap: anywhere;
 }
@@ -338,9 +338,22 @@ h1[tabindex="-1"]:focus {
     overflow-wrap: anywhere;
 }
 
+/* On a phone the stats stack in one column, separated by rules, instead of wrapping unevenly. */
+@media (max-width: 40rem) {
+    .stat-row {
+        grid-template-columns: 1fr;
+    }
+
+    .stat + .stat {
+        padding-inline-start: 0;
+        border-inline-start: 0;
+        border-block-start: 1px solid var(--rule);
+    }
+}
+
 .stat .stat-caption {
     font-family: var(--font-body);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     color: var(--muted);
 }
 
@@ -370,19 +383,25 @@ h1[tabindex="-1"]:focus {
 /* Tables: a thin rule between rows, no zebra striping or heavy borders. */
 .ledger-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+}
+
+.ledger-table tbody tr:last-child td {
+    border-block-end: 0;
 }
 
 .ledger-table th,
 .ledger-table td {
-    padding: var(--space-3) var(--space-2);
+    padding: var(--space-3) var(--space-4);
     text-align: start;
     border-block-end: 1px solid var(--rule);
     vertical-align: middle;
 }
 
 .ledger-table th {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--muted);
 }
@@ -397,7 +416,7 @@ h1[tabindex="-1"]:focus {
     padding-block-start: var(--space-2);
     text-align: start;
     color: var(--muted);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
 }
 
 /* ---------- Charts ---------- */
@@ -454,7 +473,7 @@ h1[tabindex="-1"]:focus {
     margin-block-start: var(--space-4);
     text-align: center;
     color: var(--muted);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
 }
 
 /* ---------- Category colour picker ---------- */
@@ -509,26 +528,70 @@ h1[tabindex="-1"]:focus {
 
 /* Outlined cards and tables become ruled blocks, like the dashboard, on every page.
    The sign-in panel keeps its border. */
-.mud-paper.mud-paper-outlined:not(.auth-panel),
-.mud-table.mud-table-outlined {
+.mud-paper.mud-paper-outlined:not(.auth-panel) {
     border: 0;
     border-block-start: 1px solid var(--rule);
     border-radius: 0;
     background: transparent;
 }
 
-.mud-table.mud-table-outlined {
-    border-block-end: 1px solid var(--rule);
+/* A list or a table is a raised surface: a 1px border, one step off the canvas, and hairline rows.
+   Without the frame, rows of text float on the canvas. */
+.mud-table.mud-table-outlined,
+.mud-paper.mud-paper-outlined:has(.mud-list),
+.ledger-table {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--mud-palette-surface);
+}
+
+/* Touch targets are at least 44 x 44 px. */
+.mud-icon-button,
+.mud-button-root,
+.app-brand,
+.auth-card a {
+    min-height: 44px;
+}
+
+.mud-icon-button {
+    min-width: 44px;
+}
+
+.mud-chip {
+    height: auto;
+    min-height: 44px;
+}
+
+.mud-input-outlined .mud-input-slot {
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.auth-card a {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Chips, small buttons and dense tables use the 14px secondary size, not a one-off 13px. */
+.mud-chip,
+.mud-button-root[class*="-size-small"],
+.mud-button-root[class*="-size-small"] .mud-button-label,
+.mud-table-dense .mud-table-cell {
+    font-size: 0.875rem;
 }
 
 /* Table headings match the ledger tables: small and muted. */
 .mud-table-root .mud-table-head .mud-table-cell {
     color: var(--muted);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
 /* The current page is marked by a bar as well as a colour. */
+.mud-nav-link {
+    min-height: 44px;
+}
+
 .mud-nav-link.active {
     box-shadow: inset 3px 0 0 var(--mud-palette-primary);
 }
@@ -556,16 +619,16 @@ h1[tabindex="-1"]:focus {
 
 .app-content > :nth-child(2),
 .auth-card > :nth-child(2) {
-    animation-delay: var(--motion-100);
+    animation-delay: 30ms;
 }
 
 .app-content > :nth-child(3),
 .auth-card > :nth-child(3) {
-    animation-delay: var(--motion-150);
+    animation-delay: 60ms;
 }
 
 .app-content > :nth-child(n + 4) {
-    animation-delay: var(--motion-200);
+    animation-delay: 90ms;
 }
 
 /* A press nudges a button down 1px, so a click feels received. */

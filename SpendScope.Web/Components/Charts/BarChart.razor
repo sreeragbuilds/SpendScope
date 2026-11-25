@@ -9,7 +9,7 @@
     [Parameter, EditorRequired] public IReadOnlyList<string> Labels { get; set; } = [];
     [Parameter, EditorRequired] public IReadOnlyList<decimal> Values { get; set; } = [];
     // Mid teal: readable on both the light and dark surfaces.
-    [Parameter] public string ColorHex { get; set; } = "#14B8A6";
+    [Parameter] public string ColorHex { get; set; } = "#7A73FF";
     [Parameter] public string Currency { get; set; } = "USD";
     [Parameter] public string CanvasId { get; set; } = $"chart-{Guid.NewGuid():N}";
     [Parameter] public string AriaLabel { get; set; } = "Monthly totals";

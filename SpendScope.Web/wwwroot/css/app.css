@@ -1,17 +1,15 @@
 /* ==========================================================================
    SpendScope design tokens and styles
-   Built on the MudBlazor theme (see Services/ThemeState.cs). Colours come from the
-   theme's palette variables, so light and dark mode follow automatically.
+   Direction: Stripe. A light canvas, white bordered panels, one indigo accent, one sans family.
+   Colours come from the MudBlazor theme (see Services/ThemeState.cs), so light and dark follow.
    ========================================================================== */
 
 :root {
     color-scheme: light dark;
 
-    /* Type: a serif for headline figures, a sans for everything else. */
-    --font-display: "Fraunces", Georgia, "Times New Roman", serif;
     --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-    /* Spacing scale (spec 19.10): 4, 8, 12, 16, 24, 32, 48 px. */
+    /* Spacing scale: 4, 8, 12, 16, 24, 32, 48 px. */
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -21,8 +19,10 @@
     --space-7: 48px;
 
     --radius: 6px;
-    --rule: color-mix(in srgb, currentColor 16%, transparent);
-    --muted: color-mix(in srgb, currentColor 70%, transparent);
+    --radius-panel: 8px;
+    --rule: var(--mud-palette-lines-default);
+    --muted: var(--mud-palette-text-secondary);
+    --shadow-panel: 0 1px 2px rgb(10 37 64 / 0.06);
 
     /* Motion: four durations, ease-out when something enters, ease-in when it leaves.
        Only transform and opacity are animated. */
@@ -48,7 +48,6 @@ body {
     text-rendering: optimizeLegibility;
 }
 
-/* Long headings should break evenly; running text should avoid one-word last lines. */
 h1, h2, h3 {
     text-wrap: balance;
 }
@@ -73,9 +72,9 @@ p, li, dd {
     z-index: 3000;
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius);
-    background: var(--mud-palette-background);
+    background: var(--mud-palette-surface);
     color: var(--mud-palette-text-primary);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    box-shadow: var(--shadow-panel);
     transform: translateY(-200%);
     transition: transform 0.15s ease-out;
 }
@@ -107,15 +106,14 @@ p, li, dd {
     align-content: center;
     gap: var(--space-3);
     padding: var(--space-5);
-    background: var(--mud-palette-background, #F8FAFC);
+    background: var(--mud-palette-background, #F6F9FC);
 }
 
 .boot-name {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 1.75rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    color: var(--mud-palette-primary, #0F766E);
+    color: var(--mud-palette-primary, #635BFF);
 }
 
 .boot-text {
@@ -135,14 +133,14 @@ p, li, dd {
 
 .loading-progress circle {
     fill: none;
-    stroke: var(--rule);
+    stroke: var(--rule, #E3E8EE);
     stroke-width: 0.375rem;
     transform-origin: 50% 50%;
     transform: rotate(-90deg);
 }
 
 .loading-progress circle:last-child {
-    stroke: var(--mud-palette-primary, #0F766E);
+    stroke: var(--mud-palette-primary, #635BFF);
     stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
     transition: stroke-dasharray 0.05s ease-in-out;
 }
@@ -172,7 +170,7 @@ p, li, dd {
     cursor: pointer;
 }
 
-/* ---------- App shell ---------- */
+/* ---------- App shell: top bar with inline navigation ---------- */
 
 .app-bar {
     border-block-end: 1px solid var(--rule);
@@ -182,16 +180,70 @@ p, li, dd {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    font-family: var(--font-display);
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 600;
     letter-spacing: -0.01em;
+}
+
+.app-brand .mud-icon-root {
+    color: var(--mud-palette-primary);
 }
 
 .app-user {
     align-self: center;
     margin-inline: var(--space-3);
     font-size: 0.875rem;
+    color: var(--muted);
+}
+
+/* Navigation: tabs in the top bar on wide screens, a stacked list in the drawer on narrow ones. */
+.nav-list {
+    display: flex;
+    align-self: stretch;
+    margin-inline-start: var(--space-4);
+}
+
+.nav-item {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: var(--space-3);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color var(--motion-150) var(--ease-out);
+}
+
+.nav-item:hover {
+    color: var(--mud-palette-text-primary);
+}
+
+.nav-item.active {
+    color: var(--mud-palette-primary);
+    box-shadow: inset 0 -2px 0 var(--mud-palette-primary);
+}
+
+.nav-list.stack {
+    flex-direction: column;
+    margin: 0;
+    padding: var(--space-2);
+}
+
+.nav-list.stack .nav-item {
+    border-radius: var(--radius);
+}
+
+.nav-list.stack .nav-item.active {
+    box-shadow: none;
+    background: color-mix(in srgb, var(--mud-palette-primary) 10%, transparent);
+}
+
+.nav-heading {
+    padding: var(--space-3) var(--space-3) var(--space-1);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
 }
 
 .app-content {
@@ -210,7 +262,7 @@ h1[tabindex="-1"]:focus {
 .page-header {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-3) var(--space-5);
     margin-block-end: var(--space-5);
@@ -218,39 +270,50 @@ h1[tabindex="-1"]:focus {
 
 .page-header h1 {
     margin: 0;
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.5rem);
-    line-height: 1.1;
-    letter-spacing: -0.015em;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
 }
 
-/* A section is a ruled block, not a bordered card. Rules show where one topic ends. */
+/* A panel is the one container: white surface, 1px border, small radius. Everything else sits on the canvas. */
+.panel,
+.mud-paper.mud-paper-outlined,
+.mud-table.mud-table-outlined,
+.ledger-table {
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-panel);
+}
+
+.panel {
+    padding: var(--space-5);
+    box-shadow: var(--shadow-panel);
+}
+
 .ledger-section {
-    padding-block: var(--space-5);
-    border-block-start: 1px solid var(--rule);
+    margin-block-start: var(--space-5);
 }
 
 .ledger-section h2,
+.panel h2,
 .section-title {
     margin: 0 0 var(--space-4);
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 500;
+    font-size: 1rem;
+    font-weight: 600;
     line-height: 1.2;
 }
 
 /* Two columns from a comfortable reading width upwards; one column on phones. */
 .two-up {
     display: grid;
-    gap: var(--space-5);
+    gap: var(--space-4);
 }
 
 @media (min-width: 60rem) {
     .two-up {
         grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
         align-items: start;
-        gap: var(--space-6);
     }
 }
 
@@ -273,23 +336,25 @@ h1[tabindex="-1"]:focus {
 
 .hero {
     display: grid;
-    gap: var(--space-2);
-    padding-block: var(--space-5) var(--space-4);
+    gap: var(--space-1);
+    padding: var(--space-5);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-panel);
 }
 
 .hero-label {
     margin: 0;
     color: var(--muted);
-    font-family: var(--font-body);
     font-size: 0.875rem;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 .hero-figure {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: clamp(2.75rem, 2rem + 4vw, 5rem);
-    font-weight: 500;
+    font-size: clamp(2rem, 1.5rem + 2.5vw, 3rem);
+    font-weight: 600;
     line-height: 1.1;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums lining-nums;
@@ -302,25 +367,22 @@ h1[tabindex="-1"]:focus {
     font-size: 0.875rem;
 }
 
-/* Stats sit in a row separated by rules, with the label above the number. */
+/* Stats are small panels in a row; one column when there is no room for two. */
 .stat-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-    gap: 0;
-    margin: 0;
-    border-block: 1px solid var(--rule);
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: var(--space-4);
+    margin: var(--space-4) 0 0;
 }
 
 .stat {
     display: grid;
     gap: var(--space-1);
-    padding: var(--space-4) var(--space-4) var(--space-4) 0;
+    padding: var(--space-4);
     margin: 0;
-}
-
-.stat + .stat {
-    padding-inline-start: var(--space-4);
-    border-inline-start: 1px solid var(--rule);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-panel);
 }
 
 .stat dt {
@@ -330,30 +392,18 @@ h1[tabindex="-1"]:focus {
 
 .stat dd {
     margin: 0;
-    font-family: var(--font-display);
     font-size: 1.5rem;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.2;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums lining-nums;
     overflow-wrap: anywhere;
 }
 
-/* On a phone the stats stack in one column, separated by rules, instead of wrapping unevenly. */
-@media (max-width: 40rem) {
-    .stat-row {
-        grid-template-columns: 1fr;
-    }
-
-    .stat + .stat {
-        padding-inline-start: 0;
-        border-inline-start: 0;
-        border-block-start: 1px solid var(--rule);
-    }
-}
-
 .stat .stat-caption {
-    font-family: var(--font-body);
     font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0;
     color: var(--muted);
 }
 
@@ -380,7 +430,7 @@ h1[tabindex="-1"]:focus {
     white-space: nowrap;
 }
 
-/* Tables: a thin rule between rows, no zebra striping or heavy borders. */
+/* Tables: a framed panel, a tinted header row, hairlines between rows. */
 .ledger-table {
     width: 100%;
     border-collapse: separate;
@@ -398,10 +448,12 @@ h1[tabindex="-1"]:focus {
     text-align: start;
     border-block-end: 1px solid var(--rule);
     vertical-align: middle;
+    font-size: 0.875rem;
 }
 
 .ledger-table th {
-    font-size: 0.875rem;
+    background: var(--mud-palette-background);
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--muted);
 }
@@ -417,6 +469,18 @@ h1[tabindex="-1"]:focus {
     text-align: start;
     color: var(--muted);
     font-size: 0.75rem;
+}
+
+/* MudBlazor tables get the same header treatment. */
+.mud-table-root .mud-table-head .mud-table-cell {
+    background: var(--mud-palette-background);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.mud-table.mud-table-outlined {
+    overflow: hidden;
 }
 
 /* ---------- Charts ---------- */
@@ -459,14 +523,19 @@ h1[tabindex="-1"]:focus {
     justify-content: center;
     gap: var(--space-2);
     margin-block-end: var(--space-5);
-    font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    color: var(--mud-palette-primary);
+    letter-spacing: -0.01em;
+    color: var(--mud-palette-text-primary);
 }
 
 .auth-brand .mud-icon-root {
-    font-size: 2rem;
+    font-size: 1.75rem;
+    color: var(--mud-palette-primary);
+}
+
+.auth-panel {
+    box-shadow: var(--shadow-panel);
 }
 
 .auth-footer {
@@ -497,7 +566,6 @@ h1[tabindex="-1"]:focus {
     box-shadow: 0 0 0 2px var(--mud-palette-surface) inset;
 }
 
-/* Keyboard focus on the swatches keeps the default ring. */
 .palette button:focus-visible {
     outline: 3px solid var(--mud-palette-primary);
     outline-offset: 2px;
@@ -524,25 +592,26 @@ h1[tabindex="-1"]:focus {
     content: "Something went wrong on this page.";
 }
 
-/* ---------- Every page shares the ledger look ---------- */
+/* ---------- MudBlazor refinements ---------- */
 
-/* Outlined cards and tables become ruled blocks, like the dashboard, on every page.
-   The sign-in panel keeps its border. */
-.mud-paper.mud-paper-outlined:not(.auth-panel) {
-    border: 0;
-    border-block-start: 1px solid var(--rule);
-    border-radius: 0;
-    background: transparent;
+/* The drawer is for narrow screens; its scrim must not outlive a resize to a wide one. */
+@media (min-width: 960px) {
+    .mud-drawer-overlay-temporary {
+        display: none;
+    }
 }
 
-/* A list or a table is a raised surface: a 1px border, one step off the canvas, and hairline rows.
-   Without the frame, rows of text float on the canvas. */
-.mud-table.mud-table-outlined,
-.mud-paper.mud-paper-outlined:has(.mud-list),
-.ledger-table {
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    background: var(--mud-palette-surface);
+/* Buttons: flat, small radius, a hairline shadow on filled ones. */
+.mud-button-filled {
+    box-shadow: 0 1px 1px rgb(10 37 64 / 0.08);
+}
+
+.mud-list .mud-list-item {
+    border-block-end: 1px solid var(--rule);
+}
+
+.mud-paper.mud-paper-outlined:has(.mud-list) {
+    overflow: hidden;
 }
 
 /* Touch targets are at least 44 x 44 px. */
@@ -572,28 +641,12 @@ h1[tabindex="-1"]:focus {
     align-items: center;
 }
 
-/* Chips, small buttons and dense tables use the 14px secondary size, not a one-off 13px. */
+/* Chips, small buttons and dense tables use the 14px secondary size. */
 .mud-chip,
 .mud-button-root[class*="-size-small"],
 .mud-button-root[class*="-size-small"] .mud-button-label,
 .mud-table-dense .mud-table-cell {
     font-size: 0.875rem;
-}
-
-/* Table headings match the ledger tables: small and muted. */
-.mud-table-root .mud-table-head .mud-table-cell {
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-/* The current page is marked by a bar as well as a colour. */
-.mud-nav-link {
-    min-height: 44px;
-}
-
-.mud-nav-link.active {
-    box-shadow: inset 3px 0 0 var(--mud-palette-primary);
 }
 
 /* ---------- Motion ---------- */
@@ -654,9 +707,10 @@ h1[tabindex="-1"]:focus {
 }
 
 @media (forced-colors: active) {
-    .stat + .stat,
-    .stat-row,
-    .ledger-section,
+    .panel,
+    .hero,
+    .stat,
+    .ledger-table,
     .ledger-table th,
     .ledger-table td {
         border-color: CanvasText;

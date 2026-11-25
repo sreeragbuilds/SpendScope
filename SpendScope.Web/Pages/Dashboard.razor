@@ -54,7 +54,7 @@ else
         else
         {
             <div class="ledger-section two-up">
-                <section aria-labelledby="category-heading">
+                <section aria-labelledby="category-heading" class="panel">
                     <h2 id="category-heading">Spending by category</h2>
                     <DoughnutChart Data="_slices" Currency="@_summary.Currency"
                                    AriaLabel="@($"Doughnut chart of spending by category. Largest: {_summary.Categories[0].Name}, {Format.Percent(_summary.Categories[0].Percentage)}. The table lists every category.")" />
@@ -87,7 +87,7 @@ else
             </div>
         }
 
-        <section class="ledger-section" aria-labelledby="monthly-heading">
+        <section class="ledger-section panel" aria-labelledby="monthly-heading">
             <div class="page-header" style="margin-block-end: var(--space-4)">
                 <h2 id="monthly-heading" class="section-title">Monthly totals</h2>
                 <MudSelect T="int" Value="_year" ValueChanged="OnYearChanged" Label="Year" Variant="Variant.Outlined"

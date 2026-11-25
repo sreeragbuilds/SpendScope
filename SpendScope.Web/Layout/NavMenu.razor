@@ -1,14 +1,18 @@
-<MudNavMenu Class="pt-2" aria-label="Main">
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
-    <MudNavLink Href="/expenses" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ReceiptLong">Expenses</MudNavLink>
-    <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category">Categories</MudNavLink>
-    <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.Person">Profile</MudNavLink>
+@* One list of links, laid out as top-bar tabs on wide screens and stacked in the drawer on narrow ones. *@
+<nav aria-label="Main" class="@("nav-list " + Class)">
+    <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">Dashboard</NavLink>
+    <NavLink class="nav-item" href="/expenses" Match="NavLinkMatch.Prefix">Expenses</NavLink>
+    <NavLink class="nav-item" href="/categories">Categories</NavLink>
+    <NavLink class="nav-item" href="/profile">Profile</NavLink>
 
     @* Admin section only for the Admin role (spec 19.2). The API enforces this independently. *@
     <AuthorizeView Roles="Admin">
-        <MudDivider Class="my-2" />
-        <MudText Typo="Typo.overline" Class="px-4">Admin</MudText>
-        <MudNavLink Href="/admin/users" Icon="@Icons.Material.Filled.ManageAccounts">Users</MudNavLink>
-        <MudNavLink Href="/admin/totals" Icon="@Icons.Material.Filled.Insights">Totals</MudNavLink>
+        <span class="nav-heading d-md-none">Admin</span>
+        <NavLink class="nav-item" href="/admin/users">Users</NavLink>
+        <NavLink class="nav-item" href="/admin/totals">Totals</NavLink>
     </AuthorizeView>
-</MudNavMenu>
+</nav>
+
+@code {
+    [Parameter] public string? Class { get; set; }
+}

@@ -1,13 +1,14 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @inject ThemeState ThemeState
 @inject AuthSession Session
 @inject NavigationManager Navigation
 
 <Providers />
 
-<MudLayout>
+<MudLayout @onkeydown="OnKeyDown">
     <MudAppBar Elevation="0" Class="app-bar" Dense="false">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" Class="d-md-none"
                        OnClick="() => _drawerOpen = !_drawerOpen"
                        aria-label="@(_drawerOpen ? "Hide navigation" : "Show navigation")"
                        aria-expanded="@(_drawerOpen ? "true" : "false")"
@@ -16,6 +17,7 @@
             <MudIcon Icon="@Icons.Material.Filled.DonutLarge" aria-hidden="true" />
             <span>SpendScope</span>
         </MudLink>
+        <NavMenu Class="d-none d-md-flex" />
         <MudSpacer />
         <MudTooltip Text="@(ThemeState.IsDark ? "Switch to light mode" : "Switch to dark mode")">
             <MudIconButton Icon="@(ThemeState.IsDark ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
@@ -31,9 +33,10 @@
         </AuthorizeView>
     </MudAppBar>
 
-    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="0"
-               Variant="@DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" id="app-navigation">
-        <NavMenu />
+    @* Narrow screens only: wide screens use the tabs in the top bar. *@
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="0" Variant="@DrawerVariant.Temporary"
+               Class="d-md-none" id="app-navigation">
+        <NavMenu Class="stack" />
     </MudDrawer>
 
     <MudMainContent>
@@ -54,10 +57,28 @@
 </MudLayout>
 
 @code {
-    private bool _drawerOpen = true;
+    private bool _drawerOpen;
     private ErrorBoundary? _errorBoundary;
 
+    protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
+
     protected override void OnParametersSet() => _errorBoundary?.Recover();
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _drawerOpen = false;
+        StateHasChanged();
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            _drawerOpen = false;
+        }
+    }
+
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 
     private async Task LogoutAsync()
     {
